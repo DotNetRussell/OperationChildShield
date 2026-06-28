@@ -62,7 +62,7 @@ Full methodology: in-app `/about` page.
 ## Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/) and Docker Compose (recommended), **or**
-- Python 3.12+, Node.js 20+, npm
+- Python 3.12+, Node.js 24+, npm
 - A free **Congress.gov API key** (required for the backend)
 
 ---
