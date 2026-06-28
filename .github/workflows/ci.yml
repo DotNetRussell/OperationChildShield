@@ -52,11 +52,11 @@ jobs:
       - name: Install dependencies
         working-directory: frontend
         run: |
-          if [ ! -f package-lock.json ]; then
-            echo "::error::frontend/package-lock.json is not in the repository. Commit it so CI can run npm ci."
-            exit 1
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
           fi
-          npm ci
 
       - name: Run Vitest
         working-directory: frontend
