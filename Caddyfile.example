@@ -1,0 +1,10 @@
+# Copy to Caddyfile (gitignored) and replace domains/IPs for your deployment.
+operationchildshield.org, www.operationchildshield.org {
+    reverse_proxy /api/* backend:8000
+    reverse_proxy frontend:3000
+}
+
+# Optional: redirect bare IP to canonical HTTPS domain
+# http://YOUR_SERVER_IP {
+#     redir https://operationchildshield.org{uri} permanent
+# }

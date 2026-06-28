@@ -1,0 +1,57 @@
+# Environment & secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+id_rsa
+id_rsa.*
+secrets/
+credentials.json
+deploy.env
+
+# Deployment (copy from *.example files locally — never commit real hosts/keys)
+scripts/deploy-prod.sh
+docker-compose.prod.yml
+Caddyfile
+docker-compose.override.yml
+docker-compose.local.yml
+
+# Python
+.venv/
+backend/.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+*.egg-info/
+
+# Node / Next.js
+node_modules/
+frontend/node_modules/
+.next/
+frontend/.next/
+out/
+coverage/
+
+# Runtime data & caches
+data/
+backend/data/
+*.db
+*.log
+logs/
+
+# OS & editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+dist/
+build/
+test-results.txt

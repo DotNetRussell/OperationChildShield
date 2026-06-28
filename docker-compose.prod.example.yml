@@ -1,0 +1,53 @@
+# Copy to docker-compose.prod.yml (gitignored) and adjust domains/URLs for your environment.
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - CONGRESS_API_KEY=${CONGRESS_API_KEY}
+      - CONGRESS_NUMBER=${CONGRESS_NUMBER:-119}
+      - CACHE_TTL_SECONDS=${CACHE_TTL_SECONDS:-86400}
+      - CORS_ORIGINS=https://operationchildshield.org,https://www.operationchildshield.org
+    volumes:
+      - backend-cache:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=https://operationchildshield.org
+    environment:
+      - NEXT_PUBLIC_API_URL=https://operationchildshield.org
+      - API_URL=http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
+
+volumes:
+  backend-cache:
+  caddy_data:
+  caddy_config:
