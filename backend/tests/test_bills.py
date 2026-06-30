@@ -44,3 +44,29 @@ def test_get_bill_by_id():
     assert bill is not None
     assert bill.title == "Kids Online Safety Act"
     assert get_bill_by_id("missing-bill") is None
+
+
+def test_bill_id_and_display_number():
+    bill = get_bill_by_id("119-hr-6484")
+    assert bill is not None
+    assert bill.bill_id == "119-hr-6484"
+    assert bill.display_number == "HR 6484"
+    assert bill.congress_url == build_congress_bill_url(119, "HR", 6484)
+
+
+def test_build_congress_bill_url_senate_bill():
+    url = build_congress_bill_url(119, "S", 1748)
+    assert url == "https://www.congress.gov/bill/119/senate-bill/1748"
+
+
+def test_senate_bill_not_house_scorable():
+    bill = get_bill_by_id("119-s-1748")
+    assert bill is not None
+    assert not bill.is_house_scorable
+
+
+def test_matches_child_protection_keywords():
+    from app.bills import matches_child_protection_keywords
+
+    assert matches_child_protection_keywords("Kids Online Safety Act")
+    assert matches_child_protection_keywords("Unrelated Infrastructure Bill") is False

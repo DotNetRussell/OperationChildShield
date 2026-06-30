@@ -83,3 +83,30 @@ def test_served_in_house_for_congress():
     }
     assert served_in_house_for_congress(member, 119)
     assert not served_in_house_for_congress(member, 117)
+
+
+def test_normalize_terms_empty_and_invalid():
+    assert normalize_terms({}) == []
+    assert normalize_terms({"terms": None}) == []
+    assert normalize_terms({"terms": "invalid"}) == []
+
+
+def test_extract_member_contact_alternate_website_fields():
+    member = {"officialUrl": "https://example.house.gov/"}
+    contact = extract_member_contact(member)
+    assert contact is not None
+    assert contact.website_url == "https://example.house.gov/"
+
+
+def test_extract_member_contact_address_item_list():
+    member = {
+        "addressInformation": {
+            "item": [
+                {"officeAddress": "100 Main St", "phoneNumber": "(202) 555-0199"},
+            ]
+        }
+    }
+    contact = extract_member_contact(member)
+    assert contact is not None
+    assert contact.office_address == "100 Main St"
+    assert contact.phone == "(202) 555-0199"
