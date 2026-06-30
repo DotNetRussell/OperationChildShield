@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from app.bills import ProtectionStance, TrackedBill
-from app.utils import normalize_terms
+from app.utils import extract_member_contact, normalize_terms
 
 
 class VoteValue(str, Enum):
@@ -31,6 +31,15 @@ class MemberVoteRecord:
 
 
 @dataclass
+class MemberContact:
+    office_address: str | None
+    phone: str | None
+    city: str | None
+    zip_code: str | None
+    website_url: str | None
+
+
+@dataclass
 class ReportCard:
     bioguide_id: str
     name: str
@@ -45,6 +54,7 @@ class ReportCard:
     votes_scored: int
     key_votes: list[MemberVoteRecord]
     congress_profile_url: str
+    contact: MemberContact | None = None
 
 
 def normalize_vote(vote_str: str | None) -> VoteValue:
@@ -157,6 +167,7 @@ def build_report_card(
         votes_scored=int(total_possible),
         key_votes=vote_records,
         congress_profile_url=f"https://www.congress.gov/member/{member.get('firstName', '').lower()}-{member.get('lastName', '').lower()}/{bioguide}",
+        contact=extract_member_contact(member),
     )
 
 

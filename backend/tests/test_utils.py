@@ -1,4 +1,5 @@
 from app.utils import (
+    extract_member_contact,
     member_bioguide_id,
     normalize_terms,
     normalize_vote_results,
@@ -39,6 +40,38 @@ def test_member_bioguide_id():
     assert member_bioguide_id({"bioguideId": "A000001"}) == "A000001"
     assert member_bioguide_id({"bioguideID": "B000002"}) == "B000002"
     assert member_bioguide_id({}) is None
+
+
+def test_extract_member_contact_full():
+    member = {
+        "addressInformation": {
+            "officeAddress": "1236 Longworth House Office Building",
+            "phoneNumber": "(202) 225-4965",
+            "city": "Washington",
+            "zipCode": 20515,
+        },
+        "officialWebsiteUrl": "https://pelosi.house.gov/",
+    }
+    contact = extract_member_contact(member)
+    assert contact is not None
+    assert contact.office_address == "1236 Longworth House Office Building"
+    assert contact.phone == "(202) 225-4965"
+    assert contact.city == "Washington"
+    assert contact.zip_code == "20515"
+    assert contact.website_url == "https://pelosi.house.gov/"
+
+
+def test_extract_member_contact_missing_returns_none():
+    assert extract_member_contact({}) is None
+    assert extract_member_contact({"addressInformation": {}}) is None
+
+
+def test_extract_member_contact_phone_only():
+    member = {"addressInformation": {"phoneNumber": "(202) 224-6542"}}
+    contact = extract_member_contact(member)
+    assert contact is not None
+    assert contact.phone == "(202) 224-6542"
+    assert contact.website_url is None
 
 
 def test_served_in_house_for_congress():

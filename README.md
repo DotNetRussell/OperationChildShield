@@ -261,6 +261,62 @@ Before deploying:
 
 ---
 
+## Development roadmap
+
+Priorities below focus on launch readiness, production hardening, and sustainable growth. Timelines are estimates.
+
+### Production migration assumptions
+
+- **Current MVP**: Development Docker Compose setup (single VPS or local). Caddy handles TLS and reverse proxy.
+- **Target production**: Dedicated server (e.g., Linode, DigitalOcean, Hetzner, or AWS Lightsail). Docker Compose for consistency, with secrets via Docker secrets or `.env` + systemd.
+- **Benefits**: Better uptime, isolated services, easier scaling, automated backups, monitoring, and compliance (e.g., for donations).
+- **Timeline**: 1–3 days for a basic migration when following `deploy-prod.example.sh` / `docker-compose.prod.example.yml`.
+
+### Phase 1: Immediate priorities — features + production migration (1–3 weeks)
+
+Focus on stability and launch readiness before deeper work.
+
+1. **Finish Board of Directors page**
+   - Update bios, images, and content.
+   - Enable feature flag (`ENABLE_BOARD_PAGE`), restore navigation.
+   - Polish and test.
+
+2. **Enable and implement donation page**
+   - Enable feature flag (`ENABLE_DONATE_PAGE`).
+   - Integrate Stripe (primary) with PayPal fallback: forms with suggested/recurring amounts, fee coverage, impact messaging.
+   - Add receipt/thank-you flows and basic donor logging.
+   - Test thoroughly (sandbox first).
+
+3. **Migrate to production server environment** (do this immediately after or alongside #1/#2)
+   - **Prep**: Copy and customize `docker-compose.prod.example.yml`, `Caddyfile.example`, and `scripts/deploy-prod.example.sh`. Set production env vars (CORS, `NEXT_PUBLIC_SITE_URL`, API keys). Use secrets management — never commit keys. Run `make verify-bills` and `make test`.
+   - **Server setup**: Provision a clean VPS (Ubuntu/Debian; 2–4 CPU, 4+ GB RAM). Install Docker and Docker Compose. Configure firewall (UFW: 80/443, SSH), fail2ban, automatic security updates. Set up Caddy for HTTPS and reverse proxy (`/api/*` → backend, static → frontend). Deploy via `DEPLOY_REMOTE=user@prod-server ./scripts/deploy-prod.sh`.
+   - **Migration**: Copy cached files/DB if any. Point DNS (`operationchildshield.org`) to the new server. Preserve URLs; add 301 redirects if needed. Harden with rate limiting, WAF (e.g., CrowdSec), monitoring (UptimeRobot or Prometheus/Grafana), and automated offsite backups. Post-deploy: verify health endpoint, full site functionality, donation test transaction, cache warming.
+   - **Rollback**: Keep MVP accessible temporarily; use blue-green or backup containers.
+
+**Milestone**: Live production site with board and donate pages functional, secure, and performant. Monitor the first 24–48 hours.
+
+### Phase 2: Deeper integrations and enhancements (2–4 weeks post-production)
+
+Build on the stable production foundation.
+
+- **Donor and engagement**: Stripe webhooks → Zapier/Mailchimp automation, donor portal.
+- **Advocacy tools**: Bill alerts, social sharing, analytics (GA4).
+- **Tech**: CI/CD improvements, performance tuning, accessibility audit.
+- **Security review**: Full penetration test once production is live.
+
+### Phase 3: Growth and sustainability (ongoing)
+
+- Fundraising campaigns, advanced features (e.g., AI summaries), reporting, marketing.
+- Scale hosting as traffic and donations grow.
+
+### Suggested next actions
+
+- Start with board/donate content updates (quickest wins).
+- Provision the production server in parallel.
+- Document hosting budget, preferred provider, and current MVP details before tailoring configs further.
+
+---
+
 ## Data sources and disclaimer
 
 - Member and vote data from the [Congress.gov API](https://api.congress.gov/)

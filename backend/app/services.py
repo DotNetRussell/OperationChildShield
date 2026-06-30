@@ -10,6 +10,7 @@ from app.bills import TRACKED_BILLS, get_report_bills, get_scoring_bills, get_tr
 from app.congress_client import CongressClient
 from app.utils import member_bioguide_id, normalize_terms, served_in_house_for_congress
 from app.scoring import (
+    MemberContact,
     MemberVoteRecord,
     ReportCard,
     absent_vote_record,
@@ -22,6 +23,10 @@ from app.scoring import (
 def serialize_report_card(card: ReportCard) -> dict[str, Any]:
     data = asdict(card)
     data["key_votes"] = [asdict(v) for v in card.key_votes]
+    if card.contact is not None:
+        data["contact"] = asdict(card.contact)
+    else:
+        data["contact"] = None
     return data
 
 
@@ -181,7 +186,7 @@ async def build_member_report_card(
     bioguide_id: str,
     congress: int,
 ) -> ReportCard:
-    cache_key = f"report_card_v11_{bioguide_id}_{congress}"
+    cache_key = f"report_card_v12_{bioguide_id}_{congress}"
     cached = client.cache.get(cache_key)
     if cached is not None:
         from app.scoring import VoteValue
@@ -195,8 +200,10 @@ async def build_member_report_card(
                 except ValueError:
                     entry["vote_cast"] = VoteValue.UNKNOWN
             votes.append(MemberVoteRecord(**entry))
-        data = {k: v for k, v in cached.items() if k != "key_votes"}
-        card = ReportCard(**data, key_votes=votes)
+        contact_raw = cached.get("contact")
+        contact = MemberContact(**contact_raw) if contact_raw else None
+        data = {k: v for k, v in cached.items() if k not in ("key_votes", "contact")}
+        card = ReportCard(**data, contact=contact, key_votes=votes)
         return card
 
     member = await client.get_member(bioguide_id)

@@ -11,8 +11,12 @@ secrets/
 credentials.json
 deploy.env
 
-# Deployment (copy from *.example files locally — never commit real hosts/keys)
+# Deployment — never commit real hosts, credentials, or production configs (public repo)
 scripts/deploy-prod.sh
+scripts/deploy-now.sh
+scripts/deploy_paramiko.py
+scripts/deploy-*.sh
+!scripts/deploy-prod.example.sh
 docker-compose.prod.yml
 Caddyfile
 docker-compose.override.yml

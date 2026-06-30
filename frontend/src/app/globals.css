@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --red: #b91c1c;
+  --blue: #1e40af;
+  --blue-light: #2563eb;
+  --background: #f8fafc;
+  --foreground: #1e2937;
+  --muted: #64748b;
+  --card-border: #e2e8f0;
+  --surface: #ffffff;
+  --surface-muted: #f8fafc;
+  --surface-subtle: #f1f5f9;
+  --text-subtle: #475569;
+}
+
+.dark {
+  color-scheme: dark;
+  --background: #0b1220;
+  --foreground: #e2e8f0;
+  --muted: #94a3b8;
+  --card-border: #334155;
+  --surface: #1e293b;
+  --surface-muted: #162032;
+  --surface-subtle: #273449;
+  --text-subtle: #cbd5e1;
+  --red: #f87171;
+  --blue: #60a5fa;
+  --blue-light: #3b82f6;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-red: var(--red);
+  --color-blue: var(--blue);
+  --color-blue-light: var(--blue-light);
+  --color-muted: var(--muted);
+  --color-card-border: var(--card-border);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-subtle: var(--surface-subtle);
+  --color-text-subtle: var(--text-subtle);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-roboto-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  margin: 0;
+}
+
+.hero-header {
+  min-height: 280px;
+  padding: 0.5rem 0 1.25rem;
+  background:
+    linear-gradient(rgba(30, 64, 175, 0.45), rgba(30, 64, 175, 0.55)),
+    url("https://t4.ftcdn.net/jpg/08/24/57/41/360_F_824574155_qai1qN0Wxhdb6owwcolxExe8aLjiIiat.jpg")
+      center / cover no-repeat;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.dark .hero-header {
+  background:
+    linear-gradient(rgba(11, 18, 32, 0.82), rgba(11, 18, 32, 0.92)),
+    url("https://t4.ftcdn.net/jpg/08/24/57/41/360_F_824574155_qai1qN0Wxhdb6owwcolxExe8aLjiIiat.jpg")
+      center / cover no-repeat;
+}
+
+.grade-circle-a { background: #22c55e; }
+.grade-circle-b { background: #eab308; }
+.grade-circle-c { background: #f97316; }
+.grade-circle-d { background: #f97316; }
+.grade-circle-f { background: #ef4444; }
+.grade-circle-na { background: #94a3b8; }
+
+.vote-yes { background: #86efac; color: #166534; }
+.vote-no { background: #fda4af; color: #9f1239; }
+.vote-neutral { background: #e2e8f0; color: #475569; }
+
+.dark .vote-yes { background: #14532d; color: #86efac; }
+.dark .vote-no { background: #881337; color: #fda4af; }
+.dark .vote-neutral { background: #334155; color: #cbd5e1; }
+
+.dark .kpi-strong {
+  border-color: #166534;
+  background: #052e16;
+}
+
+.dark .kpi-weak {
+  border-color: #881337;
+  background: #4c0519;
+}
+
+.dark footer {
+  background-color: #1e3a8a;
+}
