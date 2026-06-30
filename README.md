@@ -1,7 +1,7 @@
 # Operation Child Shield
 
-[![Backend unit tests](https://github.com/DotNetRussell/OperationChildShield/actions/workflows/ci.yml/badge.svg?job=backend&label=backend%20unit%20tests)](https://github.com/DotNetRussell/OperationChildShield/actions/workflows/ci.yml)
-[![Frontend unit tests](https://github.com/DotNetRussell/OperationChildShield/actions/workflows/ci.yml/badge.svg?job=frontend&label=frontend%20unit%20tests)](https://github.com/DotNetRussell/OperationChildShield/actions/workflows/ci.yml)
+[![Backend unit tests](https://img.shields.io/github/actions/workflow/status/DotNetRussell/OperationChildShield/ci.yml?label=Backend%20unit%20tests&logo=pytest&logoColor=white)](https://github.com/DotNetRussell/OperationChildShield/actions/workflows/ci.yml)
+[![Frontend unit tests](https://img.shields.io/github/actions/workflow/status/DotNetRussell/OperationChildShield/ci.yml?label=Frontend%20unit%20tests&logo=vitest&logoColor=white)](https://github.com/DotNetRussell/OperationChildShield/actions/workflows/ci.yml)
 
 A transparency platform that scores U.S. lawmakers on child protection legislation using public data from the [Congress.gov API](https://api.congress.gov/). The site publishes member report cards, a congressional metrics dashboard, and curated bill tracking with links back to official roll-call records.
 
