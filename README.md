@@ -1,5 +1,8 @@
 # Operation Child Shield
 
+[![Backend unit tests](https://github.com/DotNetRussell/OperationChildShield/actions/workflows/ci.yml/badge.svg?job=backend&label=backend%20unit%20tests)](https://github.com/DotNetRussell/OperationChildShield/actions/workflows/ci.yml)
+[![Frontend unit tests](https://github.com/DotNetRussell/OperationChildShield/actions/workflows/ci.yml/badge.svg?job=frontend&label=frontend%20unit%20tests)](https://github.com/DotNetRussell/OperationChildShield/actions/workflows/ci.yml)
+
 A transparency platform that scores U.S. lawmakers on child protection legislation using public data from the [Congress.gov API](https://api.congress.gov/). The site publishes member report cards, a congressional metrics dashboard, and curated bill tracking with links back to official roll-call records.
 
 **Production:** [https://operationchildshield.org](https://operationchildshield.org)
@@ -17,20 +20,20 @@ A transparency platform that scores U.S. lawmakers on child protection legislati
 | `/bills` | 30 tracked bills in three sections: House roll-call (scored), floor action (tracked only), introduced |
 | `/metrics` | Congress-wide analytics dashboard (KPIs, party/chamber/state breakdowns, CSV export) |
 | `/about` | Scoring methodology |
+| `/board` | Board of directors (enabled via `ENABLE_BOARD_PAGE`) |
 | `/disclaimer` | Legal disclaimer (entertainment purposes, public data sources, contact) |
-| `/partners` | Partner organizations (Countervail Intelligence, SquidSec) |
+| `/partners` | Partner organizations |
 | `/directory` | Alternate member listing |
 
-### Hidden pages (code present, feature-flagged off)
+### Hidden pages (feature-flagged off)
 
 These routes return **404** until enabled in [`frontend/src/lib/feature-flags.ts`](frontend/src/lib/feature-flags.ts):
 
-| Route | Description |
-|-------|-------------|
-| `/board` | Board of directors |
-| `/donate` | Donation UI with suggested amounts (no payment processor wired) |
+| Route | Flag | Description |
+|-------|------|-------------|
+| `/donate` | `ENABLE_DONATE_PAGE` | Donation UI with suggested amounts (no payment processor wired yet) |
 
-Set `ENABLE_BOARD_PAGE` and/or `ENABLE_DONATE_PAGE` to `true`, restore nav links in `Header.tsx` / `Footer.tsx`, and rebuild.
+Set `ENABLE_DONATE_PAGE` to `true`, add nav links in `Header.tsx` / `Footer.tsx` if desired, and rebuild. The board page is already enabled (`ENABLE_BOARD_PAGE = true`) with nav links in the header and footer.
 
 ### Backend API
 
@@ -165,6 +168,7 @@ See [`.env.example`](.env.example) for a template.
 
 ```
 OperationChildShield/
+├── AGENTS.md                     # Agent notes (deployment sensitivity, roadmap pointer)
 ├── backend/
 │   ├── app/
 │   │   ├── bills.py              # Curated tracked legislation
@@ -174,12 +178,13 @@ OperationChildShield/
 │   │   ├── services.py           # Report cards, directory, grade index
 │   │   ├── metrics.py            # Metrics dashboard aggregation
 │   │   └── routes/               # FastAPI routers
-│   └── tests/                    # Pytest unit tests
+│   └── tests/                    # 91 pytest unit tests (no live API calls)
 ├── frontend/
 │   └── src/
 │       ├── app/                  # Next.js App Router pages
 │       ├── components/           # UI components
-│       └── lib/                  # API client, types, metrics utilities
+│       └── lib/                  # API client, types, utilities + Vitest tests
+├── .github/workflows/ci.yml      # Backend + frontend test CI on push/PR
 ├── scripts/
 │   ├── deploy-prod.example.sh    # Production deploy template (copy → deploy-prod.sh)
 │   ├── verify_bills.py           # Manual bill verification
@@ -190,12 +195,16 @@ OperationChildShield/
 └── Makefile                      # Common dev commands
 ```
 
+Deployment scripts and production configs (`deploy-prod.sh`, `docker-compose.prod.yml`, `Caddyfile`, etc.) are **gitignored** — copy from the `*.example` templates locally.
+
 ---
 
 ## Testing
 
+**126 unit tests** total — **91 backend** (pytest) + **35 frontend** (Vitest). CI runs both suites on every push and pull request to `main` ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
+
 ```bash
-# All tests
+# All tests (recommended — uses backend venv via scripts/test.sh)
 make test
 
 # Backend only
@@ -211,9 +220,25 @@ make lint
 make verify-bills
 ```
 
-Backend tests use **pytest** and do not call Congress.gov (pure logic + isolated health route).
+### Backend coverage (`backend/tests/`)
 
-Frontend tests use **Vitest** for pure TypeScript utilities.
+| Module | Tests |
+|--------|-------|
+| `scoring`, `bills`, `utils` | Vote normalization, grades, bill catalog, member parsing |
+| `services`, `metrics` | Grade filters, report-card helpers, dashboard aggregation |
+| `cache`, `config`, `rate_limit` | File cache TTL, settings, concurrency limits |
+| `bill_verification` | Congress.gov title verification (mocked client) |
+| `routes/health` | Health endpoint (isolated FastAPI app) |
+
+Backend tests do **not** call Congress.gov — pure logic, mocked async clients, and an isolated health route.
+
+### Frontend coverage (`frontend/src/lib/*.test.ts`)
+
+| Module | Tests |
+|--------|-------|
+| `format`, `party`, `states` | Member labels, party resolution, state codes |
+| `share`, `metrics-utils` | Social sharing URLs, metrics chart helpers |
+| `fetch-queue`, `theme` | API request concurrency, dark/light theme preference |
 
 ---
 
@@ -257,7 +282,7 @@ Before deploying:
 - **First request after cache expiry** can take 30–60+ seconds while report cards are built.
 - **Backend startup** verifies all 30 tracked bills against Congress.gov; mismatches prevent the server from starting.
 - **Senate scores** show `N/A` — scoring requires House roll-call data.
-- **Board / Donate pages** are disabled via feature flags; code remains for future launch.
+- **Board page** is live (`ENABLE_BOARD_PAGE = true`). **Donate page** remains disabled until `ENABLE_DONATE_PAGE` is enabled and a payment processor is integrated.
 
 ---
 
@@ -276,10 +301,9 @@ Priorities below focus on launch readiness, production hardening, and sustainabl
 
 Focus on stability and launch readiness before deeper work.
 
-1. **Finish Board of Directors page**
-   - Update bios, images, and content.
-   - Enable feature flag (`ENABLE_BOARD_PAGE`), restore navigation.
-   - Polish and test.
+1. **Polish Board of Directors page** (live — flag and nav enabled)
+   - Refine bios, images, and content.
+   - Continue QA and accessibility review.
 
 2. **Enable and implement donation page**
    - Enable feature flag (`ENABLE_DONATE_PAGE`).
