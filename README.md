@@ -333,12 +333,6 @@ Build on the stable production foundation.
 - Fundraising campaigns, advanced features (e.g., AI summaries), reporting, marketing.
 - Scale hosting as traffic and donations grow.
 
-### Suggested next actions
-
-- Start with board/donate content updates (quickest wins).
-- Provision the production server in parallel.
-- Document hosting budget, preferred provider, and current MVP details before tailoring configs further.
-
 ---
 
 ## Data sources and disclaimer
