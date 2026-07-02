@@ -3,6 +3,7 @@ from collections import Counter
 from dataclasses import asdict
 from typing import Any
 
+from app.cache_refresh import maybe_schedule_revalidation
 from app.rate_limit import get_report_card_semaphore
 
 from app.bill_verification import get_official_title
@@ -181,31 +182,30 @@ async def resolve_member_party(
     return ""
 
 
-async def build_member_report_card(
+def _report_card_from_cache(cached: dict[str, Any]) -> ReportCard:
+    from app.scoring import VoteValue
+
+    votes = []
+    for v in cached.get("key_votes", []):
+        entry = dict(v)
+        if isinstance(entry.get("vote_cast"), str):
+            try:
+                entry["vote_cast"] = VoteValue(entry["vote_cast"])
+            except ValueError:
+                entry["vote_cast"] = VoteValue.UNKNOWN
+        votes.append(MemberVoteRecord(**entry))
+    contact_raw = cached.get("contact")
+    contact = MemberContact(**contact_raw) if contact_raw else None
+    data = {k: v for k, v in cached.items() if k not in ("key_votes", "contact")}
+    return ReportCard(**data, contact=contact, key_votes=votes)
+
+
+async def _refresh_member_report_card(
     client: CongressClient,
     bioguide_id: str,
     congress: int,
+    cache_key: str,
 ) -> ReportCard:
-    cache_key = f"report_card_v12_{bioguide_id}_{congress}"
-    cached = client.cache.get(cache_key)
-    if cached is not None:
-        from app.scoring import VoteValue
-
-        votes = []
-        for v in cached.get("key_votes", []):
-            entry = dict(v)
-            if isinstance(entry.get("vote_cast"), str):
-                try:
-                    entry["vote_cast"] = VoteValue(entry["vote_cast"])
-                except ValueError:
-                    entry["vote_cast"] = VoteValue.UNKNOWN
-            votes.append(MemberVoteRecord(**entry))
-        contact_raw = cached.get("contact")
-        contact = MemberContact(**contact_raw) if contact_raw else None
-        data = {k: v for k, v in cached.items() if k not in ("key_votes", "contact")}
-        card = ReportCard(**data, contact=contact, key_votes=votes)
-        return card
-
     member = await client.get_member(bioguide_id)
     party = await resolve_member_party(client, bioguide_id, congress, member)
     if party:
@@ -218,6 +218,24 @@ async def build_member_report_card(
     card.votes_tracked = len(participation)
     client.cache.set(cache_key, serialize_report_card(card))
     return card
+
+
+async def build_member_report_card(
+    client: CongressClient,
+    bioguide_id: str,
+    congress: int,
+) -> ReportCard:
+    cache_key = f"report_card_v12_{bioguide_id}_{congress}"
+    cached = client.cache.get(cache_key)
+    if cached is not None:
+        maybe_schedule_revalidation(
+            client.cache,
+            cache_key,
+            lambda: _refresh_member_report_card(client, bioguide_id, congress, cache_key),
+        )
+        return _report_card_from_cache(cached)
+
+    return await _refresh_member_report_card(client, bioguide_id, congress, cache_key)
 
 
 def matches_grade_filter(letter_grade: str, grade_filter: str) -> bool:
@@ -233,12 +251,11 @@ def grade_bucket(letter_grade: str) -> str:
     return letter_grade[0].upper()
 
 
-async def get_grade_index(client: CongressClient, congress: int) -> dict[str, str]:
-    cache_key = f"grade_index_v8_{congress}"
-    cached = client.cache.get(cache_key)
-    if cached is not None:
-        return cached
-
+async def _refresh_grade_index(
+    client: CongressClient,
+    congress: int,
+    cache_key: str,
+) -> dict[str, str]:
     members, _ = await build_directory(client, congress)
     index: dict[str, str] = {}
     sem = asyncio.Semaphore(4)
@@ -251,7 +268,12 @@ async def get_grade_index(client: CongressClient, congress: int) -> dict[str, st
         async with sem:
             try:
                 async with get_report_card_semaphore():
-                    card = await build_member_report_card(client, bid, congress)
+                    card = await _refresh_member_report_card(
+                        client,
+                        bid,
+                        congress,
+                        f"report_card_v12_{bid}_{congress}",
+                    )
                 index[bid] = card.letter_grade
             except Exception:
                 index[bid] = "N/A"
@@ -259,6 +281,20 @@ async def get_grade_index(client: CongressClient, congress: int) -> dict[str, st
     await asyncio.gather(*(grade_member(m) for m in members))
     client.cache.set(cache_key, index)
     return index
+
+
+async def get_grade_index(client: CongressClient, congress: int) -> dict[str, str]:
+    cache_key = f"grade_index_v8_{congress}"
+    cached = client.cache.get(cache_key)
+    if cached is not None:
+        maybe_schedule_revalidation(
+            client.cache,
+            cache_key,
+            lambda: _refresh_grade_index(client, congress, cache_key),
+        )
+        return cached
+
+    return await _refresh_grade_index(client, congress, cache_key)
 
 
 GRADE_SORT_ORDER = ("F", "D", "C", "B", "A", "N/A")

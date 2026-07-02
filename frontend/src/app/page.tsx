@@ -1,12 +1,15 @@
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { GradeFilter } from "@/components/GradeFilter";
 import { MemberFiltersBar } from "@/components/MemberFiltersBar";
 import { PoliticianGrid } from "@/components/PoliticianGrid";
 import { SearchBar } from "@/components/SearchBar";
 import {
+  DEFAULT_GRADE_FILTER,
   getMembers,
   GRADE_FILTER_PAGE_SIZE,
   LANDING_PAGE_SIZE,
+  resolveGradeFilter,
   SEARCH_PAGE_SIZE,
   type MemberFilters,
 } from "@/lib/api";
@@ -73,7 +76,19 @@ async function GridSection({
 export default async function HomePage({ searchParams }: HomePageProps) {
   const params = await searchParams;
   const hasSearch = Boolean(params.search?.trim());
-  const gradeFilter = params.grade?.trim() || undefined;
+  const rawGrade = params.grade?.trim();
+  const hasOtherParams = Boolean(
+    params.search?.trim() ||
+      params.party?.trim() ||
+      params.state?.trim() ||
+      params.chamber?.trim()
+  );
+
+  if (rawGrade === undefined && !hasOtherParams) {
+    redirect(`/?grade=${DEFAULT_GRADE_FILTER}`);
+  }
+
+  const gradeFilter = resolveGradeFilter(params.grade);
   const partyFilter = params.party?.trim() || undefined;
   const stateFilter = params.state?.trim() || undefined;
 

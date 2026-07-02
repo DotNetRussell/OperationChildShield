@@ -46,6 +46,16 @@ export interface MemberFilters {
 export const LANDING_PAGE_SIZE = 15;
 export const SEARCH_PAGE_SIZE = 50;
 export const GRADE_FILTER_PAGE_SIZE = 250;
+export const DEFAULT_GRADE_FILTER = "F";
+export const GRADE_FILTER_ALL = "all";
+
+/** Maps URL grade param to API filter; defaults to F, treats "all" as no filter. */
+export function resolveGradeFilter(grade?: string): string | undefined {
+  const raw = grade?.trim();
+  if (raw === GRADE_FILTER_ALL) return undefined;
+  if (!raw) return DEFAULT_GRADE_FILTER;
+  return raw;
+}
 
 function buildMembersQuery(filters: MemberFilters): string {
   const params = new URLSearchParams();

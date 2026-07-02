@@ -3,6 +3,7 @@ from typing import Any
 import httpx
 
 from app.cache import FileCache
+from app.cache_refresh import maybe_schedule_revalidation
 from app.config import settings
 
 
@@ -25,12 +26,7 @@ class CongressClient:
             await self._client.aclose()
             self._client = None
 
-    async def _request(self, path: str, params: dict | None = None) -> dict[str, Any]:
-        cache_key = f"{path}?{params or {}}"
-        cached = self.cache.get(cache_key)
-        if cached is not None:
-            return cached
-
+    async def _fetch_and_cache(self, path: str, params: dict | None, cache_key: str) -> dict[str, Any]:
         if not self.api_key:
             raise ValueError(
                 "CONGRESS_API_KEY is not set. Get a free key at https://api.congress.gov/sign-up/"
@@ -47,6 +43,19 @@ class CongressClient:
         data = response.json()
         self.cache.set(cache_key, data)
         return data
+
+    async def _request(self, path: str, params: dict | None = None) -> dict[str, Any]:
+        cache_key = f"{path}?{params or {}}"
+        cached = self.cache.get(cache_key)
+        if cached is not None:
+            maybe_schedule_revalidation(
+                self.cache,
+                cache_key,
+                lambda: self._fetch_and_cache(path, params, cache_key),
+            )
+            return cached
+
+        return await self._fetch_and_cache(path, params, cache_key)
 
     async def get_members(self, congress: int, current_only: bool = True) -> list[dict]:
         params = {"currentMember": str(current_only).lower()}
@@ -66,12 +75,7 @@ class CongressClient:
         )
         return data.get("houseRollCallVotes", [])
 
-    async def get_all_house_votes(self, congress: int, session: int) -> list[dict]:
-        cache_key = f"all_house_votes_v2_{congress}_{session}"
-        cached = self.cache.get(cache_key)
-        if cached is not None:
-            return cached
-
+    async def _refresh_all_house_votes(self, congress: int, session: int, cache_key: str) -> list[dict]:
         all_votes: list[dict] = []
         offset = 0
         while True:
@@ -86,14 +90,23 @@ class CongressClient:
         self.cache.set(cache_key, all_votes)
         return all_votes
 
-    async def get_house_vote_members(self, congress: int, session: int, roll_call: int) -> list[dict]:
-        """All member positions for a roll call (paginated, cached per roll call)."""
-        from app.utils import normalize_vote_results
-
-        cache_key = f"house_vote_members_v1_{congress}_{session}_{roll_call}"
+    async def get_all_house_votes(self, congress: int, session: int) -> list[dict]:
+        cache_key = f"all_house_votes_v2_{congress}_{session}"
         cached = self.cache.get(cache_key)
         if cached is not None:
+            maybe_schedule_revalidation(
+                self.cache,
+                cache_key,
+                lambda: self._refresh_all_house_votes(congress, session, cache_key),
+            )
             return cached
+
+        return await self._refresh_all_house_votes(congress, session, cache_key)
+
+    async def _refresh_house_vote_members(
+        self, congress: int, session: int, roll_call: int, cache_key: str
+    ) -> list[dict]:
+        from app.utils import normalize_vote_results
 
         all_items: list[dict] = []
         offset = 0
@@ -127,19 +140,29 @@ class CongressClient:
         self.cache.set(cache_key, all_items)
         return all_items
 
+    async def get_house_vote_members(self, congress: int, session: int, roll_call: int) -> list[dict]:
+        """All member positions for a roll call (paginated, cached per roll call)."""
+        cache_key = f"house_vote_members_v1_{congress}_{session}_{roll_call}"
+        cached = self.cache.get(cache_key)
+        if cached is not None:
+            maybe_schedule_revalidation(
+                self.cache,
+                cache_key,
+                lambda: self._refresh_house_vote_members(
+                    congress, session, roll_call, cache_key
+                ),
+            )
+            return cached
+
+        return await self._refresh_house_vote_members(congress, session, roll_call, cache_key)
+
     async def get_bill(self, congress: int, bill_type: str, number: int) -> dict:
         data = await self._request(f"/bill/{congress}/{bill_type.lower()}/{number}")
         return data.get("bill", data)
 
-    async def find_house_votes_for_bill(
-        self, congress: int, bill_type: str, number: int
+    async def _refresh_bill_votes(
+        self, congress: int, bill_type: str, number: int, cache_key: str
     ) -> list[dict]:
-        """Find all House roll call votes associated with a specific bill."""
-        cache_key = f"bill_votes_v3_{congress}_{bill_type.upper()}_{number}"
-        cached = self.cache.get(cache_key)
-        if cached is not None:
-            return cached
-
         bill_type_upper = bill_type.upper()
         matching: list[dict] = []
 
@@ -159,3 +182,19 @@ class CongressClient:
 
         self.cache.set(cache_key, matching)
         return matching
+
+    async def find_house_votes_for_bill(
+        self, congress: int, bill_type: str, number: int
+    ) -> list[dict]:
+        """Find all House roll call votes associated with a specific bill."""
+        cache_key = f"bill_votes_v3_{congress}_{bill_type.upper()}_{number}"
+        cached = self.cache.get(cache_key)
+        if cached is not None:
+            maybe_schedule_revalidation(
+                self.cache,
+                cache_key,
+                lambda: self._refresh_bill_votes(congress, bill_type, number, cache_key),
+            )
+            return cached
+
+        return await self._refresh_bill_votes(congress, bill_type, number, cache_key)

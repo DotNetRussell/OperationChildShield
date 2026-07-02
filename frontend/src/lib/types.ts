@@ -11,6 +11,14 @@ export interface MemberSummary {
   letterGrade?: string;
 }
 
+export interface MemberContact {
+  office_address: string | null;
+  phone: string | null;
+  city: string | null;
+  zip_code: string | number | null;
+  website_url: string | null;
+}
+
 export interface MemberVote {
   bill_id: string;
   bill_title: string;
@@ -41,6 +49,7 @@ export interface ReportCard {
   votes_scored: number;
   key_votes: MemberVote[];
   congress_profile_url: string;
+  contact: MemberContact | null;
 }
 
 export interface TrackedBill {

@@ -39,9 +39,9 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     images: [
       {
-        url: "/images/ocs.jpg",
-        width: 784,
-        height: 1168,
+        url: "/images/ocs-v2.jpg",
+        width: 1254,
+        height: 1254,
         alt: "Operation Child Shield — protecting America's children through congressional accountability",
       },
     ],
@@ -50,7 +50,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
-    images: ["/images/ocs.jpg"],
+    images: ["/images/ocs-v2.jpg"],
   },
 };
 

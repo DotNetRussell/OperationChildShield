@@ -1,4 +1,4 @@
-.PHONY: test test-backend test-frontend lint install verify-bills dev
+.PHONY: test test-backend test-frontend lint install verify-bills dev dev-local
 
 test:
 	./scripts/test.sh
@@ -21,3 +21,6 @@ verify-bills:
 
 dev:
 	docker compose up --build
+
+dev-local:
+	./scripts/dev-local.sh start

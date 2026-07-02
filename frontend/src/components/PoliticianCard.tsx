@@ -27,7 +27,6 @@ interface PoliticianCardProps {
 export function PoliticianCard({ member, loadScores = true }: PoliticianCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [report, setReport] = useState<ReportCard | null>(null);
-  const [loading, setLoading] = useState(false);
   const [visible, setVisible] = useState(false);
 
   const displayName = formatDisplayName(member.name);
@@ -74,7 +73,6 @@ export function PoliticianCard({ member, loadScores = true }: PoliticianCardProp
     if (!visible || !loadScores) return;
 
     let cancelled = false;
-    setLoading(true);
 
     reportCardQueue
       .enqueue(async () => {
@@ -89,9 +87,6 @@ export function PoliticianCard({ member, loadScores = true }: PoliticianCardProp
       })
       .catch(() => {
         /* scores unavailable */
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
       });
 
     return () => {
@@ -99,9 +94,8 @@ export function PoliticianCard({ member, loadScores = true }: PoliticianCardProp
     };
   }, [visible, loadScores, member.bioguideId]);
 
-  const grade =
-    report?.letter_grade ?? member.letterGrade ?? (loading ? "…" : "—");
-  const score = report ? `${report.score_percent}%` : loading ? "—" : "—";
+  const grade = report?.letter_grade ?? member.letterGrade ?? "—";
+  const score = report ? `${report.score_percent}%` : "—";
 
   const keyVotes = (report?.key_votes ?? [])
     .filter((v) => v.vote_cast !== "Unknown")
@@ -180,15 +174,12 @@ export function PoliticianCard({ member, loadScores = true }: PoliticianCardProp
           <strong className="block my-2 mb-2.5 text-red text-[0.85rem]">
             KEY VOTES
           </strong>
-          {loading && (
-            <div className="text-muted text-sm py-2 animate-pulse">Loading votes…</div>
-          )}
-          {!loading && !report && (
+          {!report && (
             <div className="text-muted text-sm py-2 px-3 bg-surface-muted rounded-md border-l-4 border-red">
               Open the full report for vote details.
             </div>
           )}
-          {!loading && report && keyVotes.length === 0 && (
+          {report && keyVotes.length === 0 && (
             <div className="text-muted text-sm py-2 px-3 bg-surface-muted rounded-md border-l-4 border-red">
               {member.chamber === "Senate"
                 ? "Senate floor votes are not yet available via Congress.gov API."

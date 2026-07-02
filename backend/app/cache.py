@@ -16,19 +16,34 @@ class FileCache:
         safe = key.replace("/", "_").replace(":", "_")
         return self.cache_dir / f"{safe}.json"
 
-    def get(self, key: str) -> Any | None:
+    def _read_entry(self, key: str) -> dict[str, Any] | None:
         path = self._path(key)
         if not path.exists():
             return None
         try:
-            data = json.loads(path.read_text())
-            if time.time() - data.get("_cached_at", 0) > self.ttl:
-                path.unlink(missing_ok=True)
-                return None
-            return data.get("payload")
+            return json.loads(path.read_text())
         except (json.JSONDecodeError, OSError):
             path.unlink(missing_ok=True)
             return None
+
+    def get(self, key: str) -> Any | None:
+        """Return cached payload, including stale entries (stale-while-revalidate)."""
+        data = self._read_entry(key)
+        if data is None:
+            return None
+        return data.get("payload")
+
+    def is_stale(self, key: str) -> bool:
+        data = self._read_entry(key)
+        if data is None:
+            return False
+        return time.time() - data.get("_cached_at", 0) > self.ttl
+
+    def is_fresh(self, key: str) -> bool:
+        data = self._read_entry(key)
+        if data is None:
+            return False
+        return time.time() - data.get("_cached_at", 0) <= self.ttl
 
     def set(self, key: str, payload: Any) -> None:
         path = self._path(key)

@@ -44,7 +44,7 @@ export function PoliticianGrid({
   const [members, setMembers] = useState(initialMembers);
   const [total, setTotal] = useState(initialTotal);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [sortingGrades, setSortingGrades] = useState(false);
+
   const [loadError, setLoadError] = useState<string | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -58,7 +58,6 @@ export function PoliticianGrid({
     if (!infiniteScroll || !listFilters || gradeFilter || isSearch) return;
 
     let cancelled = false;
-    setSortingGrades(true);
 
     fetchMembersClient({
       ...listFilters,
@@ -74,9 +73,6 @@ export function PoliticianGrid({
       })
       .catch(() => {
         /* keep the fast server-rendered list if grade sorting is still warming up */
-      })
-      .finally(() => {
-        if (!cancelled) setSortingGrades(false);
       });
 
     return () => {
@@ -181,11 +177,8 @@ export function PoliticianGrid({
       )}
       {!gradeFilter && !isSearch && !activeFilterLabel && total > members.length && (
         <p className="text-center text-muted text-sm mb-6 px-2">
-          Showing {members.length} of {total} members
-          {sortingGrades
-            ? ", sorting by grade…"
-            : ", sorted worst grade first (F → N/A)"}
-          . Scroll down to load more.{" "}
+          Showing {members.length} of {total} members, sorted worst grade first
+          (F → N/A). Scroll down to load more.{" "}
           <strong className="text-foreground">Search by name or state</strong> to find a
           specific representative.
         </p>
@@ -212,11 +205,7 @@ export function PoliticianGrid({
 
       {hasMore && (
         <div ref={sentinelRef} className="py-10 text-center">
-          {loadingMore ? (
-            <p className="text-sm text-muted animate-pulse">Loading more members…</p>
-          ) : (
-            <p className="text-sm text-muted">Scroll for more members</p>
-          )}
+          <p className="text-sm text-muted">Scroll for more members</p>
         </div>
       )}
 

@@ -47,10 +47,10 @@ function memberInitials(name: string): string {
     .toUpperCase();
 }
 
-const boardMembers: BoardMember[] = [
+const officers: BoardMember[] = [
   {
-    name: "Jo Wiggum",
-    role: "Executive Director & President",
+    name: "Joanna Wiggum",
+    role: "President",
     membership: "Founding Voting Member",
     organization: "Countervail Intelligence",
     organizationLabel: "Founder of Countervail",
@@ -61,21 +61,29 @@ const boardMembers: BoardMember[] = [
     photoHeight: 521,
   },
   {
-    name: "Pam James",
-    role: "Board Secretary",
-    membership: "Founding Voting Member",
-  },
-  {
     name: "Hailey Allen",
-    role: "Board Treasurer",
+    role: "Vice President",
     membership: "Founding Voting Member",
     photo: "/images/hailey.png",
     photoWidth: 1122,
     photoHeight: 1402,
   },
   {
+    name: "Pam James",
+    role: "Secretary",
+    membership: "Founding Voting Member",
+  },
+  {
+    name: "David Saldivar",
+    role: "Treasurer",
+    membership: "Founding Voting Member",
+  },
+];
+
+const boardDirectors: BoardMember[] = [
+  {
     name: "Todd Thompson",
-    role: "Advisory Board Member",
+    role: "Board Director",
     membership: "Founding Voting Member",
     linkedin: "https://www.linkedin.com/in/todd-thompson-a538064",
     photo: "/images/todd.png",
@@ -84,7 +92,7 @@ const boardMembers: BoardMember[] = [
   },
   {
     name: "Anthony Russell",
-    role: "Chief Technology Officer",
+    role: "Board Director and Chief Technology Officer (CTO)",
     membership: "Founding Voting Member",
     organization: "SquidSec",
     organizationLabel: "Founder of SquidSec",
@@ -143,55 +151,63 @@ export default function BoardPage() {
         public data.
       </p>
 
-      <div className="mt-10 grid gap-8">
-        {boardMembers.map((member) => (
-          <article
-            key={member.name}
-            className="flex flex-col sm:flex-row items-center gap-6 bg-surface rounded-[10px] p-8 border border-card-border shadow-[0_6px_12px_-2px_rgb(0_0_0_/_0.1)]"
-          >
-            <div className="shrink-0">
-              <MemberPhoto member={member} />
-            </div>
-            <div className="flex-1 text-center sm:text-left">
-              <p className="text-xs font-bold uppercase tracking-wider text-red m-0">
-                {member.role}
-              </p>
-              <p className="mt-1 text-[0.7rem] font-semibold uppercase tracking-wide text-blue/80 m-0">
-                {member.membership}
-              </p>
-              <div className="mt-1 flex items-center gap-2 justify-center sm:justify-start">
-                <h2 className="text-2xl font-bold text-blue m-0">{member.name}</h2>
-                {member.linkedin && (
-                  <a
-                    href={member.linkedin}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[#0A66C2] hover:text-[#004182] transition-colors"
-                    aria-label={`${member.name} on LinkedIn`}
-                  >
-                    <LinkedInIcon />
-                  </a>
-                )}
-              </div>
-              {member.organizationLabel && (
-                <p className="mt-2 text-muted text-sm leading-relaxed m-0">
-                  {member.organizationLabel}
-                </p>
-              )}
-              {member.href && member.organization && (
-                <a
-                  href={member.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block mt-4 text-sm font-bold text-red hover:underline"
-                >
-                  {member.organization} →
-                </a>
-              )}
-            </div>
-          </article>
-        ))}
-      </div>
+      {[
+        { title: "Officers", members: officers },
+        { title: "Board Directors", members: boardDirectors },
+      ].map(({ title, members }) => (
+        <section key={title} className="mt-10">
+          <h2 className="text-xl font-bold text-blue m-0">{title}</h2>
+          <div className="mt-6 grid gap-8">
+            {members.map((member) => (
+              <article
+                key={member.name}
+                className="flex flex-col sm:flex-row items-center gap-6 bg-surface rounded-[10px] p-8 border border-card-border shadow-[0_6px_12px_-2px_rgb(0_0_0_/_0.1)]"
+              >
+                <div className="shrink-0">
+                  <MemberPhoto member={member} />
+                </div>
+                <div className="flex-1 text-center sm:text-left">
+                  <p className="text-xs font-bold uppercase tracking-wider text-red m-0">
+                    {member.role}
+                  </p>
+                  <p className="mt-1 text-[0.7rem] font-semibold uppercase tracking-wide text-blue/80 m-0">
+                    {member.membership}
+                  </p>
+                  <div className="mt-1 flex items-center gap-2 justify-center sm:justify-start">
+                    <h3 className="text-2xl font-bold text-blue m-0">{member.name}</h3>
+                    {member.linkedin && (
+                      <a
+                        href={member.linkedin}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#0A66C2] hover:text-[#004182] transition-colors"
+                        aria-label={`${member.name} on LinkedIn`}
+                      >
+                        <LinkedInIcon />
+                      </a>
+                    )}
+                  </div>
+                  {member.organizationLabel && (
+                    <p className="mt-2 text-muted text-sm leading-relaxed m-0">
+                      {member.organizationLabel}
+                    </p>
+                  )}
+                  {member.href && member.organization && (
+                    <a
+                      href={member.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block mt-4 text-sm font-bold text-red hover:underline"
+                    >
+                      {member.organization} →
+                    </a>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }

@@ -2,10 +2,11 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
+import { DEFAULT_GRADE_FILTER, GRADE_FILTER_ALL } from "@/lib/api";
 import { gradeCircleClass } from "@/lib/format";
 
 const GRADE_OPTIONS = [
-  { value: "", label: "All" },
+  { value: GRADE_FILTER_ALL, label: "All" },
   { value: "F", label: "F" },
   { value: "D", label: "D" },
   { value: "C", label: "C" },
@@ -20,7 +21,7 @@ export function GradeFilter() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
-  const activeGrade = searchParams.get("grade") || "";
+  const activeGrade = searchParams.get("grade") ?? DEFAULT_GRADE_FILTER;
   const [counts, setCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
@@ -34,12 +35,10 @@ export function GradeFilter() {
 
   function selectGrade(grade: string) {
     const params = new URLSearchParams(searchParams.toString());
-    if (grade) params.set("grade", grade);
-    else params.delete("grade");
+    params.set("grade", grade);
 
     startTransition(() => {
-      const qs = params.toString();
-      router.push(qs ? `/?${qs}` : "/");
+      router.push(`/?${params.toString()}`);
     });
   }
 
@@ -51,8 +50,8 @@ export function GradeFilter() {
       <div className="flex flex-wrap justify-center gap-2 px-1 sm:gap-3">
         {GRADE_OPTIONS.map(({ value, label }) => {
           const isActive = activeGrade === value;
-          const count = value ? counts[value] : undefined;
-          const isLetter = value && value !== "N/A";
+          const count = value !== GRADE_FILTER_ALL ? counts[value] : undefined;
+          const isLetter = value !== GRADE_FILTER_ALL && value !== "N/A";
 
           return (
             <button
@@ -90,12 +89,7 @@ export function GradeFilter() {
           );
         })}
       </div>
-      {isPending && (
-        <p className="text-center text-sm text-muted mt-3 animate-pulse">
-          Loading members…
-        </p>
-      )}
-      {activeGrade && !isPending && (
+      {activeGrade !== GRADE_FILTER_ALL && (
         <p className="text-center text-xs text-muted mt-3">
           First grade filter may take a minute while scores are calculated. Results are
           cached afterward.

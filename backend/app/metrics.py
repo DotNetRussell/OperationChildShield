@@ -9,12 +9,13 @@ from datetime import datetime, timezone
 from typing import Any
 
 from app.bills import TRACKED_BILLS, get_scoring_bills
+from app.cache_refresh import maybe_schedule_revalidation
 from app.congress_client import CongressClient
 from app.rate_limit import get_report_card_semaphore
 from app.scoring import VoteValue
 from app.services import (
+    _refresh_member_report_card,
     build_directory,
-    build_member_report_card,
     grade_bucket,
     serialize_report_card,
 )
@@ -603,17 +604,12 @@ def build_metrics_payload(members: list[dict[str, Any]], congress: int) -> dict[
     }
 
 
-async def build_metrics_dashboard(
+async def _refresh_metrics_dashboard(
     client: CongressClient,
     congress: int,
+    cache_key: str,
 ) -> dict[str, Any]:
-    cache_key = f"metrics_dashboard_v1_{congress}"
-    cached = client.cache.get(cache_key)
-    if cached is not None:
-        return cached
-
     directory, _ = await build_directory(client, congress)
-    member_records: list[dict[str, Any]] = []
     sem = asyncio.Semaphore(4)
 
     async def load_member(dm: dict[str, Any]) -> dict[str, Any]:
@@ -628,8 +624,11 @@ async def build_metrics_dashboard(
         async with sem:
             try:
                 async with get_report_card_semaphore():
-                    card = await build_member_report_card(
-                        client, dm["bioguideId"], congress
+                    card = await _refresh_member_report_card(
+                        client,
+                        dm["bioguideId"],
+                        congress,
+                        f"report_card_v12_{dm['bioguideId']}_{congress}",
                     )
                 card_data = serialize_report_card(card)
             except Exception:
@@ -640,3 +639,20 @@ async def build_metrics_dashboard(
     payload = build_metrics_payload(list(member_records), congress)
     client.cache.set(cache_key, payload)
     return payload
+
+
+async def build_metrics_dashboard(
+    client: CongressClient,
+    congress: int,
+) -> dict[str, Any]:
+    cache_key = f"metrics_dashboard_v1_{congress}"
+    cached = client.cache.get(cache_key)
+    if cached is not None:
+        maybe_schedule_revalidation(
+            client.cache,
+            cache_key,
+            lambda: _refresh_metrics_dashboard(client, congress, cache_key),
+        )
+        return cached
+
+    return await _refresh_metrics_dashboard(client, congress, cache_key)
