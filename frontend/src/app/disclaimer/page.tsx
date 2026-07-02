@@ -21,11 +21,11 @@ export default function DisclaimerPage() {
       <section className="mt-8 space-y-6 text-muted leading-relaxed">
         <p>
           <strong className="text-foreground">Entertainment purposes.</strong>{" "}
-          Operation Child Shield is provided for informational and entertainment
-          purposes only. Nothing on this site constitutes legal, political, or
-          professional advice. Grades, scores, and rankings are editorial
+          Operation Child Shield is provided for informational purposes only.
+          Nothing on this site constitutes legal, political, or professional
+          advice. Voting records and policy-consistency indicators are factual
           presentations of publicly available legislative data and should not be
-          treated as official government records or endorsements.
+          treated as official government records or endorsements of any candidate.
         </p>
 
         <p>
@@ -40,8 +40,9 @@ export default function DisclaimerPage() {
           >
             Congress.gov API
           </a>{" "}
-          and related open government datasets. We apply our own methodology to
-          organize and score that data. Always verify official records directly at{" "}
+          and related open government datasets. We organize that data and compare
+          recorded votes to board-adopted policy positions. Always verify official
+          records directly at{" "}
           <a
             href="https://www.congress.gov"
             className="text-red font-semibold hover:underline"

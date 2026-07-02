@@ -1,90 +1,69 @@
 import { describe, expect, it } from "vitest";
-
-import { buildShareText, buildSharePayload, getReportPageUrl } from "./share";
-
-describe("getReportPageUrl", () => {
-  it("builds member report URLs", () => {
-    expect(getReportPageUrl("S000033", "https://operationchildshield.org")).toBe(
-      "https://operationchildshield.org/member/S000033"
-    );
-  });
-});
+import { buildSharePayload, buildShareText } from "./share";
 
 describe("buildShareText", () => {
-  it("includes name, party, grade, key votes, stats, and report link", () => {
-    const text = buildShareText(
-      {
-        bioguideId: "M001157",
-        name: "McCaul, Michael T.",
-        party: "Republican",
-        letterGrade: "B",
-        scorePercent: 78,
-        votesScored: 2,
-        votesTracked: 5,
-        keyVotes: [
-          {
-            bill_number: "H.R. 734",
-            bill_title: "Protection of Women and Girls in Sports Act",
-            vote_cast: "Aye",
-          },
-          {
-            bill_number: "H.R. 5",
-            bill_title: "Parents Bill of Rights Act",
-            vote_cast: "Nay",
-          },
-        ],
-        chamber: "House",
-      },
-      "https://operationchildshield.org"
-    );
+  it("includes name, party, policy labels, stats, and report link", () => {
+    const text = buildShareText({
+      bioguideId: "T000001",
+      name: "Smith, John",
+      party: "Democratic",
+      votesTracked: 5,
+      keyVotes: [
+        {
+          bill_number: "HR 6484",
+          bill_title: "Kids Online Safety Act",
+          vote_cast: "Aye",
+          policy_consistent: true,
+        },
+        {
+          bill_number: "HR 134",
+          bill_title: "Protecting our Communities from Sexual Predators Act",
+          vote_cast: "Nay",
+          policy_consistent: false,
+        },
+      ],
+    });
 
-    expect(text).toContain("Michael T. McCaul (Republican)");
-    expect(text).toContain("Child Protection Grade: B");
-    expect(text).toContain("Protection Score: 78%");
-    expect(text).toContain("• H.R. 734 — Yes");
-    expect(text).toContain("• H.R. 5 — No");
-    expect(text).toContain("2 votes scored • 5 bills tracked");
-    expect(text).toContain("https://operationchildshield.org/member/M001157");
+    expect(text).toContain("John Smith (Democrat)");
+    expect(text).toContain("Child Safety Voting Record");
+    expect(text).toContain("Consistent with OCS policy");
+    expect(text).toContain("Not consistent with OCS policy");
+    expect(text).toContain("5 bills tracked");
+    expect(text).toContain("/member/T000001");
   });
 
-  it("handles missing report data gracefully", () => {
-    const text = buildShareText(
-      {
-        bioguideId: "A000374",
-        name: "Abraham, Ralph Lee",
-        party: "Republican",
-        letterGrade: "—",
-        chamber: "House",
-      },
-      "https://operationchildshield.org"
-    );
+  it("handles missing vote data without score language", () => {
+    const text = buildShareText({
+      bioguideId: "T000002",
+      name: "Doe, Jane",
+      party: "Republican",
+    });
 
-    expect(text).toContain("Ralph Lee Abraham (Republican)");
-    expect(text).toContain("Child Protection Grade: —");
-    expect(text).not.toContain("Protection Score:");
-    expect(text).toContain("No floor votes on tracked child protection bills yet.");
+    expect(text).toContain("Child Safety Voting Record");
+    expect(text).not.toContain("Grade");
+    expect(text).not.toContain("Score");
+    expect(text).not.toContain("%");
   });
 });
 
 describe("buildSharePayload", () => {
-  it("separates report URL from full share message", () => {
-    const payload = buildSharePayload(
-      {
-        bioguideId: "S000033",
-        name: "Sanders, Bernard",
-        party: "Independent",
-        letterGrade: "F",
-        scorePercent: 12,
-        votesScored: 1,
-        votesTracked: 4,
-        keyVotes: [],
-        chamber: "Senate",
-      },
-      "https://operationchildshield.org"
-    );
+  it("returns title, text, and url", () => {
+    const payload = buildSharePayload({
+      bioguideId: "T000003",
+      name: "Lee, Amy",
+      party: "Independent",
+      keyVotes: [
+        {
+          bill_number: "HR 1",
+          bill_title: "Example Bill",
+          vote_cast: "Aye",
+          policy_consistent: true,
+        },
+      ],
+    });
 
-    expect(payload.url).toBe("https://operationchildshield.org/member/S000033");
-    expect(payload.text).toContain(payload.url);
-    expect(payload.text).not.toBe(payload.url);
+    expect(payload.title).toContain("Amy Lee");
+    expect(payload.url).toContain("/member/T000003");
+    expect(payload.text).toContain("Consistent with OCS policy");
   });
 });

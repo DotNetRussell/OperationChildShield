@@ -22,12 +22,12 @@ const SITE_URL =
 
 const SITE_TITLE = "Operation Child Shield";
 const SITE_DESCRIPTION =
-  "Unbiased, nonpartisan transparency analyzing congressional voting records on child protection legislation using public data from Congress.gov.";
+  "Unbiased, nonpartisan child safety voting records for Congress — factual vote data from Congress.gov compared to board-adopted policy positions.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE_TITLE} • Unbiased Congressional Accountability`,
+    default: `${SITE_TITLE} • Child Safety Voting Records`,
     template: `%s • ${SITE_TITLE}`,
   },
   description: SITE_DESCRIPTION,

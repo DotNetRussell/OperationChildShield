@@ -5,11 +5,8 @@ export interface ShareReportInput {
   bioguideId: string;
   name: string;
   party: string;
-  letterGrade: string;
-  scorePercent?: number | null;
-  votesScored?: number | null;
   votesTracked?: number | null;
-  keyVotes?: Pick<MemberVote, "bill_number" | "bill_title" | "vote_cast">[];
+  keyVotes?: Pick<MemberVote, "bill_number" | "bill_title" | "vote_cast" | "policy_consistent">[];
   chamber?: string;
 }
 
@@ -23,18 +20,24 @@ export function getReportPageUrl(
   return `${origin.replace(/\/$/, "")}/member/${bioguideId}`;
 }
 
+function policyLabel(consistent: boolean | null | undefined): string {
+  if (consistent === true) return "Consistent with OCS policy";
+  if (consistent === false) return "Not consistent with OCS policy";
+  return "No floor vote yet";
+}
+
 function formatKeyVoteLine(
-  vote: Pick<MemberVote, "bill_number" | "bill_title" | "vote_cast">
+  vote: Pick<MemberVote, "bill_number" | "bill_title" | "vote_cast" | "policy_consistent">
 ): string {
   const label = voteToLabel(vote.vote_cast).label;
   const billRef = vote.bill_number?.trim() || vote.bill_title.trim();
-  return `• ${billRef} — ${label}`;
+  return `• ${billRef} — ${label} (${policyLabel(vote.policy_consistent)})`;
 }
 
 function keyVotesMessage(input: ShareReportInput): string {
   const votes = (input.keyVotes ?? []).filter((v) => v.vote_cast !== "Unknown");
   if (votes.length > 0) {
-    return votes.map(formatKeyVoteLine).join("\n");
+    return votes.slice(0, 5).map(formatKeyVoteLine).join("\n");
   }
   if (input.chamber === "Senate") {
     return "• Senate floor votes are not yet available via Congress.gov API.";
@@ -48,29 +51,18 @@ export function buildShareText(
 ): string {
   const displayName = formatDisplayName(input.name);
   const party = formatPartyLabel(input.party);
-  const grade = input.letterGrade?.trim() || "—";
   const url = getReportPageUrl(input.bioguideId, origin);
 
-  const scoreLine =
-    input.scorePercent != null
-      ? `Protection Score: ${input.scorePercent}%`
+  const statsLine =
+    input.votesTracked != null
+      ? `${input.votesTracked} bill${input.votesTracked === 1 ? "" : "s"} tracked`
       : null;
-
-  const statsParts: string[] = [];
-  if (input.votesScored != null) {
-    statsParts.push(`${input.votesScored} vote${input.votesScored === 1 ? "" : "s"} scored`);
-  }
-  if (input.votesTracked != null) {
-    statsParts.push(`${input.votesTracked} bill${input.votesTracked === 1 ? "" : "s"} tracked`);
-  }
-  const statsLine = statsParts.length ? statsParts.join(" • ") : null;
 
   const lines = [
     `${displayName} (${party})`,
-    `Child Protection Grade: ${grade}`,
-    scoreLine,
+    "Child Safety Voting Record",
     "",
-    "Key votes:",
+    "Recorded votes:",
     keyVotesMessage(input),
     statsLine,
     "",

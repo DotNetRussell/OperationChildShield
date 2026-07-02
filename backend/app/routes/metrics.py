@@ -47,51 +47,42 @@ async def export_metrics_csv(
     writer = csv.writer(output)
     writer.writerow(
         [
-            "bioguide_id",
-            "name",
-            "chamber",
-            "state",
-            "state_code",
-            "region",
-            "party",
-            "district",
-            "letter_grade",
-            "score_percent",
-            "votes_scored",
-            "votes_participated",
-            "not_voting_count",
+            "bill_id",
+            "bill_number",
+            "bill_title",
+            "eligible_members",
+            "votes_yes",
+            "votes_no",
+            "votes_not_voting",
+            "votes_present",
             "participation_rate",
-            "term_count",
-            "seniority_bucket",
-            "passing_grade",
+            "policy_consistent_votes",
+            "policy_not_consistent_votes",
+            "congress_url",
         ]
     )
 
-    for m in payload.get("members", []):
+    for bill in payload.get("bills", []):
+        counts = bill.get("voteCounts", {})
         writer.writerow(
             [
-                m.get("bioguideId"),
-                m.get("name"),
-                m.get("chamber"),
-                m.get("state"),
-                m.get("stateCode"),
-                m.get("region"),
-                m.get("partyNormalized"),
-                m.get("district"),
-                m.get("letterGrade"),
-                m.get("scorePercent"),
-                m.get("votesScored"),
-                m.get("votesParticipated"),
-                m.get("notVotingCount"),
-                m.get("participationRate"),
-                m.get("termCount"),
-                m.get("seniorityBucket"),
-                m.get("passingGrade"),
+                bill.get("billId"),
+                bill.get("billNumber"),
+                bill.get("billTitle"),
+                bill.get("eligibleMembers"),
+                counts.get("yes", 0),
+                counts.get("no", 0),
+                counts.get("notVoting", 0),
+                counts.get("present", 0),
+                bill.get("participationRate"),
+                bill.get("policyConsistentVotes"),
+                bill.get("policyNotConsistentVotes"),
+                bill.get("congressUrl"),
             ]
         )
 
     output.seek(0)
-    filename = f"operation-child-shield-metrics-{congress_num}.csv"
+    filename = f"operation-child-shield-bill-metrics-{congress_num}.csv"
     return StreamingResponse(
         iter([output.getvalue()]),
         media_type="text/csv",

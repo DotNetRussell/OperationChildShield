@@ -4,12 +4,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { PartyBadge } from "@/components/PartyBadge";
+import { MemberVotePieChart } from "@/components/MemberVotePieChart";
+import { MemberVoteStats } from "@/components/MemberVoteStats";
+import { PolicyBadge } from "@/components/PolicyBadge";
 import { ShareButton } from "@/components/ShareButton";
 import { StateBadge } from "@/components/StateBadge";
 import {
   formatDisplayName,
   formatMemberSubtitle,
-  gradeCircleClass,
+  resolvePolicyConsistent,
+  summarizeMemberVotes,
   voteToLabel,
 } from "@/lib/format";
 import { hasKnownParty } from "@/lib/party";
@@ -21,13 +25,15 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 interface PoliticianCardProps {
   member: MemberSummary;
-  loadScores?: boolean;
+  loadVotes?: boolean;
 }
 
-export function PoliticianCard({ member, loadScores = true }: PoliticianCardProps) {
+export function PoliticianCard({ member, loadVotes = true }: PoliticianCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [report, setReport] = useState<ReportCard | null>(null);
   const [visible, setVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   const displayName = formatDisplayName(member.name);
   const subtitle = formatMemberSubtitle(member);
@@ -35,7 +41,7 @@ export function PoliticianCard({ member, loadScores = true }: PoliticianCardProp
 
   useEffect(() => {
     const el = cardRef.current;
-    if (!el || !loadScores) return;
+    if (!el || !loadVotes) return;
 
     let cancelled = false;
 
@@ -67,39 +73,48 @@ export function PoliticianCard({ member, loadScores = true }: PoliticianCardProp
       cancelled = true;
       observer.disconnect();
     };
-  }, [loadScores, member.bioguideId]);
+  }, [loadVotes, member.bioguideId]);
 
   useEffect(() => {
-    if (!visible || !loadScores) return;
+    if (!visible || !loadVotes) return;
 
     let cancelled = false;
+    setLoading(true);
+    setLoadFailed(false);
 
     reportCardQueue
       .enqueue(async () => {
         const res = await fetch(
           `${API_URL}/api/members/${member.bioguideId}/report-card`
         );
-        if (!res.ok) throw new Error(`Failed to load report card: ${res.status}`);
+        if (!res.ok) throw new Error(`Failed to load voting record: ${res.status}`);
         return res.json() as Promise<ReportCard>;
       })
       .then((data) => {
-        if (!cancelled) setReport(data);
+        if (!cancelled) {
+          setReport(data);
+          setLoadFailed(false);
+        }
       })
       .catch(() => {
-        /* scores unavailable */
+        if (!cancelled) setLoadFailed(true);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [visible, loadScores, member.bioguideId]);
+  }, [visible, loadVotes, member.bioguideId]);
 
-  const grade = report?.letter_grade ?? member.letterGrade ?? "—";
-  const score = report ? `${report.score_percent}%` : "—";
+  const voteSummary = summarizeMemberVotes(report?.key_votes ?? []);
 
-  const keyVotes = (report?.key_votes ?? [])
-    .filter((v) => v.vote_cast !== "Unknown")
-    .slice(0, 3);
+  const previewVotes = (report?.key_votes ?? []).filter(
+    (v) =>
+      v.vote_cast !== "Unknown" &&
+      resolvePolicyConsistent(v.policy_consistent, v.score_impact) !== null
+  ).slice(0, 3);
 
   return (
     <div
@@ -132,11 +147,6 @@ export function PoliticianCard({ member, loadScores = true }: PoliticianCardProp
               </div>
             )}
           </div>
-          <div
-            className={`w-[52px] h-[52px] rounded-full flex items-center justify-center text-xl font-black shrink-0 border-[4px] border-white text-white ${gradeCircleClass(grade)}`}
-          >
-            {grade}
-          </div>
         </div>
 
         <div className="mt-3 pt-3 border-t border-white/25 flex items-center justify-between gap-2 flex-wrap">
@@ -163,49 +173,65 @@ export function PoliticianCard({ member, loadScores = true }: PoliticianCardProp
           </div>
         )}
 
-        <div className="flex shrink-0 items-baseline gap-1.5">
-          <span className="text-[2.25rem] font-extrabold text-blue font-mono leading-none">
-            {score}
-          </span>
-          <span className="text-text-subtle text-[0.95rem]">Protection Score</span>
-        </div>
-
-        <div className="mt-5 flex min-h-0 flex-1 flex-col text-[0.9rem]">
+        <div className="mt-1 flex min-h-0 flex-1 flex-col text-[0.9rem]">
           <strong className="block my-2 mb-2.5 text-red text-[0.85rem]">
-            KEY VOTES
+            RECORDED VOTES
           </strong>
-          {!report && (
+          {!loading && loadFailed && !report && (
             <div className="text-muted text-sm py-2 px-3 bg-surface-muted rounded-md border-l-4 border-red">
-              Open the full report for vote details.
+              Voting record unavailable right now. Open the full record to try again.
             </div>
           )}
-          {report && keyVotes.length === 0 && (
+          {report && voteSummary.recorded > 0 && (
+            <>
+              <MemberVoteStats summary={voteSummary} compact />
+              <div className="mb-3">
+                <MemberVotePieChart votes={report.key_votes} />
+              </div>
+            </>
+          )}
+          {report && voteSummary.recorded === 0 && (
             <div className="text-muted text-sm py-2 px-3 bg-surface-muted rounded-md border-l-4 border-red">
               {member.chamber === "Senate"
                 ? "Senate floor votes are not yet available via Congress.gov API."
                 : "No floor votes on tracked child protection bills yet."}
             </div>
           )}
-          {keyVotes.map((bill) => {
+          {previewVotes.map((bill) => {
             const vote = voteToLabel(bill.vote_cast);
             return (
               <div
                 key={bill.bill_id}
-                className="py-2.5 px-3.5 bg-surface-muted mb-2 rounded-md flex justify-between items-center border-l-4 border-red"
+                className="py-2.5 px-3.5 bg-surface-muted mb-2 rounded-md flex justify-between items-center gap-2 border-l-4 border-red"
               >
-                <div className="flex-1 pr-2 text-sm leading-snug">
+                <div className="flex-1 pr-2 text-sm leading-snug min-w-0">
                   {bill.bill_title.length > 48
                     ? `${bill.bill_title.slice(0, 48)}…`
                     : bill.bill_title}
                 </div>
-                <div
-                  className={`font-bold px-2.5 py-0.5 rounded-full text-[0.8rem] shrink-0 ${vote.className}`}
-                >
-                  {vote.label}
+                <div className="flex items-center gap-2 shrink-0">
+                  <div
+                    className={`font-bold px-2.5 py-0.5 rounded-full text-[0.8rem] whitespace-nowrap ${vote.className}`}
+                  >
+                    {vote.label}
+                  </div>
+                  <PolicyBadge
+                    consistent={resolvePolicyConsistent(
+                      bill.policy_consistent,
+                      bill.score_impact
+                    )}
+                    size="sm"
+                  />
                 </div>
               </div>
             );
           })}
+          {report && voteSummary.recorded > previewVotes.length && (
+            <p className="text-xs text-muted mt-1">
+              +{voteSummary.recorded - previewVotes.length} more recorded vote
+              {voteSummary.recorded - previewVotes.length === 1 ? "" : "s"}
+            </p>
+          )}
         </div>
 
         <div className="mt-5 flex shrink-0 flex-col gap-2">
@@ -213,9 +239,6 @@ export function PoliticianCard({ member, loadScores = true }: PoliticianCardProp
             bioguideId={member.bioguideId}
             name={member.name}
             party={party}
-            letterGrade={grade}
-            scorePercent={report?.score_percent}
-            votesScored={report?.votes_scored}
             votesTracked={report?.votes_tracked}
             keyVotes={report?.key_votes}
             chamber={member.chamber}
@@ -224,7 +247,7 @@ export function PoliticianCard({ member, loadScores = true }: PoliticianCardProp
             href={`/member/${member.bioguideId}`}
             className="block w-full py-3.5 bg-red text-white border-none rounded-md font-bold text-center no-underline hover:bg-[#991b1b] transition-colors"
           >
-            FULL REPORT →
+            VOTING RECORD →
           </Link>
         </div>
       </div>

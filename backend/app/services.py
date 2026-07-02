@@ -21,18 +21,26 @@ from app.scoring import (
 )
 
 
+def serialize_vote(vote: MemberVoteRecord) -> dict[str, Any]:
+    data = asdict(vote)
+    data.pop("points_earned", None)
+    data.pop("points_possible", None)
+    if isinstance(data.get("vote_cast"), object) and hasattr(data["vote_cast"], "value"):
+        data["vote_cast"] = data["vote_cast"].value
+    return data
+
+
 def serialize_report_card(card: ReportCard) -> dict[str, Any]:
     data = asdict(card)
-    data["key_votes"] = [asdict(v) for v in card.key_votes]
+    data.pop("score_percent", None)
+    data.pop("letter_grade", None)
+    data.pop("votes_scored", None)
+    data["key_votes"] = [serialize_vote(v) for v in card.key_votes]
     if card.contact is not None:
         data["contact"] = asdict(card.contact)
     else:
         data["contact"] = None
     return data
-
-
-def serialize_vote(vote: MemberVoteRecord) -> dict[str, Any]:
-    return asdict(vote)
 
 
 def _pick_bill_vote(
@@ -101,7 +109,7 @@ async def fetch_member_votes(
                     vote_result=record.vote_result,
                     congress_url=record.congress_url,
                     roll_call_url=record.roll_call_url,
-                    score_impact=bill.floor_status_label + " — not counted in score",
+                    score_impact=bill.floor_status_label + " — no per-member roll call recorded",
                     points_earned=0.0,
                     points_possible=0.0,
                 )
@@ -193,10 +201,25 @@ def _report_card_from_cache(cached: dict[str, Any]) -> ReportCard:
                 entry["vote_cast"] = VoteValue(entry["vote_cast"])
             except ValueError:
                 entry["vote_cast"] = VoteValue.UNKNOWN
+        entry.setdefault("points_earned", 0.0)
+        entry.setdefault("points_possible", 0.0)
+        if entry.get("policy_consistent") is None:
+            possible = float(entry.get("points_possible") or 0)
+            if possible > 0:
+                entry["policy_consistent"] = float(entry.get("points_earned") or 0) > 0
+            else:
+                impact = str(entry.get("score_impact") or "").lower()
+                if "consistent with ocs" in impact:
+                    entry["policy_consistent"] = "not consistent" not in impact
+                elif entry.get("vote_cast") not in (VoteValue.UNKNOWN, None):
+                    entry["policy_consistent"] = None
         votes.append(MemberVoteRecord(**entry))
     contact_raw = cached.get("contact")
     contact = MemberContact(**contact_raw) if contact_raw else None
     data = {k: v for k, v in cached.items() if k not in ("key_votes", "contact")}
+    data.setdefault("score_percent", 0.0)
+    data.setdefault("letter_grade", "N/A")
+    data.setdefault("votes_scored", 0)
     return ReportCard(**data, contact=contact, key_votes=votes)
 
 
@@ -225,7 +248,7 @@ async def build_member_report_card(
     bioguide_id: str,
     congress: int,
 ) -> ReportCard:
-    cache_key = f"report_card_v12_{bioguide_id}_{congress}"
+    cache_key = f"report_card_v13_{bioguide_id}_{congress}"
     cached = client.cache.get(cache_key)
     if cached is not None:
         maybe_schedule_revalidation(
@@ -272,7 +295,7 @@ async def _refresh_grade_index(
                         client,
                         bid,
                         congress,
-                        f"report_card_v12_{bid}_{congress}",
+                        f"report_card_v13_{bid}_{congress}",
                     )
                 index[bid] = card.letter_grade
             except Exception:
@@ -361,7 +384,6 @@ async def build_directory(
     party: str | None = None,
     limit: int | None = None,
     offset: int = 0,
-    sort: str | None = None,
 ) -> tuple[list[dict[str, Any]], int]:
     members = await client.get_members(congress)
     results: list[dict[str, Any]] = []
@@ -410,20 +432,7 @@ async def build_directory(
             "congressUrl": f"https://www.congress.gov/member/{bioguide}",
         })
 
-    if sort == "grade":
-        index = await get_grade_index(client, congress)
-        for m in results:
-            m["letterGrade"] = index.get(m["bioguideId"], "N/A")
-        results.sort(
-            key=lambda m: (
-                grade_sort_key(m.get("letterGrade", "N/A")),
-                m["chamber"],
-                m["state"],
-                m["name"],
-            )
-        )
-    else:
-        results.sort(key=lambda x: (x["chamber"], x["state"], x["name"]))
+    results.sort(key=lambda x: (x["chamber"], x["state"], x["name"]))
 
     total = len(results)
     if limit is not None:

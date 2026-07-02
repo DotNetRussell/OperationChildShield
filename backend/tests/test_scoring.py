@@ -46,10 +46,14 @@ def test_normalize_vote(raw, expected):
     ],
 )
 def test_score_vote(vote, stance, earned, possible):
-    e, p, impact = score_vote(vote, stance)
+    e, p, impact, policy_consistent = score_vote(vote, stance)
     assert e == earned
     assert p == possible
     assert impact
+    if possible <= 0:
+        assert policy_consistent is None
+    else:
+        assert policy_consistent == (earned > 0)
 
 
 @pytest.mark.parametrize(
@@ -118,7 +122,7 @@ def test_unscored_bill_record_has_zero_points():
     assert record.vote_cast == VoteValue.UNKNOWN
     assert record.points_earned == 0.0
     assert record.points_possible == 0.0
-    assert "not counted" in record.score_impact.lower()
+    assert "no floor vote" in record.score_impact.lower()
 
 
 def test_build_report_card_computes_grade_from_votes():

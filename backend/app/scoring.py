@@ -28,6 +28,7 @@ class MemberVoteRecord:
     score_impact: str
     points_earned: float
     points_possible: float
+    policy_consistent: bool | None = None
 
 
 @dataclass
@@ -74,26 +75,68 @@ def normalize_vote(vote_str: str | None) -> VoteValue:
     return mapping.get(vote_str.lower().strip(), VoteValue.UNKNOWN)
 
 
-def score_vote(vote: VoteValue, stance: ProtectionStance) -> tuple[float, float, str]:
-    """Return (points_earned, points_possible, impact_description)."""
+def policy_consistent_from_points(earned: float, possible: float) -> bool | None:
+    if possible <= 0:
+        return None
+    return earned > 0
+
+
+def score_vote(vote: VoteValue, stance: ProtectionStance) -> tuple[float, float, str, bool | None]:
+    """Return (points_earned, points_possible, impact_description, policy_consistent)."""
     if vote == VoteValue.UNKNOWN:
-        return 0.0, 0.0, "No vote recorded — not counted in score"
+        return 0.0, 0.0, "No floor vote recorded on this bill yet", None
 
     if vote == VoteValue.NOT_VOTING:
-        return 0.0, 1.0, "Did not vote — counted against protection score"
+        earned, possible = 0.0, 1.0
+        return (
+            earned,
+            possible,
+            "Not consistent with OCS board-adopted policy position",
+            policy_consistent_from_points(earned, possible),
+        )
 
     if vote == VoteValue.PRESENT:
-        return 0.0, 1.0, "Present but did not vote — counted against protection score"
+        earned, possible = 0.0, 1.0
+        return (
+            earned,
+            possible,
+            "Not consistent with OCS board-adopted policy position",
+            policy_consistent_from_points(earned, possible),
+        )
 
     if stance == ProtectionStance.PROTECTION:
         if vote == VoteValue.AYE:
-            return 1.0, 1.0, "Voted to protect children"
-        return 0.0, 1.0, "Voted against child protection measure"
+            earned, possible = 1.0, 1.0
+            return (
+                earned,
+                possible,
+                "Consistent with OCS board-adopted policy position",
+                policy_consistent_from_points(earned, possible),
+            )
+        earned, possible = 0.0, 1.0
+        return (
+            earned,
+            possible,
+            "Not consistent with OCS board-adopted policy position",
+            policy_consistent_from_points(earned, possible),
+        )
 
-    # anti_protection stance: Nay is the pro-protection vote
+    # anti_protection stance: Nay is the policy-aligned vote
     if vote == VoteValue.NAY:
-        return 1.0, 1.0, "Voted to protect children"
-    return 0.0, 1.0, "Voted against child protection measure"
+        earned, possible = 1.0, 1.0
+        return (
+            earned,
+            possible,
+            "Consistent with OCS board-adopted policy position",
+            policy_consistent_from_points(earned, possible),
+        )
+    earned, possible = 0.0, 1.0
+    return (
+        earned,
+        possible,
+        "Not consistent with OCS board-adopted policy position",
+        policy_consistent_from_points(earned, possible),
+    )
 
 
 def percent_to_grade(percent: float) -> str:
@@ -190,7 +233,7 @@ def member_vote_from_roll_call(
     session: int,
 ) -> MemberVoteRecord:
     vote_cast = normalize_vote(member_vote.get("voteCast"))
-    earned, possible, impact = score_vote(vote_cast, bill.stance)
+    earned, possible, impact, policy_consistent = score_vote(vote_cast, bill.stance)
 
     roll_call = vote_meta.get("rollCallNumber", "")
 
@@ -208,6 +251,7 @@ def member_vote_from_roll_call(
         score_impact=impact,
         points_earned=earned,
         points_possible=possible,
+        policy_consistent=policy_consistent,
     )
 
 
@@ -218,7 +262,7 @@ def absent_vote_record(
     session: int,
 ) -> MemberVoteRecord:
     """Member was in the House but has no roll-call entry — counts as not voting."""
-    earned, possible, impact = score_vote(VoteValue.NOT_VOTING, bill.stance)
+    earned, possible, impact, policy_consistent = score_vote(VoteValue.NOT_VOTING, bill.stance)
     roll_call = vote_meta.get("rollCallNumber", "")
 
     return MemberVoteRecord(
@@ -235,6 +279,7 @@ def absent_vote_record(
         score_impact=impact,
         points_earned=earned,
         points_possible=possible,
+        policy_consistent=policy_consistent,
     )
 
 
@@ -251,7 +296,8 @@ def unscored_bill_record(bill: TrackedBill) -> MemberVoteRecord:
         vote_result=None,
         congress_url=bill.congress_url,
         roll_call_url=None,
-        score_impact="No floor vote on this bill yet — not counted in score",
+        score_impact="No floor vote on this bill yet",
         points_earned=0.0,
         points_possible=0.0,
+        policy_consistent=None,
     )

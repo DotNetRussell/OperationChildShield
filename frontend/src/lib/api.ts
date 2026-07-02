@@ -1,4 +1,4 @@
-import type { MetricsDashboardData } from "./metrics-types";
+import type { MetricsOverview } from "./metrics-types";
 import type { MemberSummary, ReportCard, TrackedBill } from "./types";
 
 const API_URL =
@@ -37,25 +37,12 @@ export interface MemberFilters {
   chamber?: string;
   state?: string;
   party?: string;
-  grade?: string;
-  sort?: "grade";
   limit?: number;
   offset?: number;
 }
 
 export const LANDING_PAGE_SIZE = 15;
 export const SEARCH_PAGE_SIZE = 50;
-export const GRADE_FILTER_PAGE_SIZE = 250;
-export const DEFAULT_GRADE_FILTER = "F";
-export const GRADE_FILTER_ALL = "all";
-
-/** Maps URL grade param to API filter; defaults to F, treats "all" as no filter. */
-export function resolveGradeFilter(grade?: string): string | undefined {
-  const raw = grade?.trim();
-  if (raw === GRADE_FILTER_ALL) return undefined;
-  if (!raw) return DEFAULT_GRADE_FILTER;
-  return raw;
-}
 
 function buildMembersQuery(filters: MemberFilters): string {
   const params = new URLSearchParams();
@@ -63,8 +50,6 @@ function buildMembersQuery(filters: MemberFilters): string {
   if (filters.chamber) params.set("chamber", filters.chamber);
   if (filters.state) params.set("state", filters.state);
   if (filters.party) params.set("party", filters.party);
-  if (filters.grade) params.set("grade", filters.grade);
-  if (filters.sort) params.set("sort", filters.sort);
   if (filters.limit != null) params.set("limit", String(filters.limit));
   if (filters.offset != null) params.set("offset", String(filters.offset));
   return params.toString();
@@ -75,7 +60,6 @@ export type MembersResponse = {
   total: number;
   limit: number | null;
   offset: number;
-  grade: string | null;
   congress: number;
 };
 
@@ -100,7 +84,29 @@ export async function fetchMembersClient(
 }
 
 export async function getReportCard(bioguideId: string): Promise<ReportCard> {
-  return fetchApi(`/api/members/${bioguideId}/report-card`);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20_000);
+
+  try {
+    const res = await fetch(`${API_URL}/api/members/${bioguideId}/report-card`, {
+      cache: "no-store",
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`API error ${res.status}: ${body}`);
+    }
+
+    return res.json();
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error("Request timed out while waiting for voting record");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export async function getTrackedBills(): Promise<{
@@ -117,15 +123,60 @@ export async function getHealth(): Promise<{
   return fetchApi("/api/health");
 }
 
-export async function getMetrics(): Promise<MetricsDashboardData> {
-  return fetchApi("/api/metrics");
+function metricsApiBase(): string {
+  return (
+    process.env.API_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    "http://localhost:8000"
+  );
+}
+
+function normalizeMetricsOverview(payload: unknown): MetricsOverview {
+  const data = payload as Partial<MetricsOverview>;
+  return {
+    congress: data.congress ?? 0,
+    lastUpdated: data.lastUpdated ?? new Date().toISOString(),
+    dataSource: data.dataSource ?? "Congress.gov API",
+    methodologyNote: data.methodologyNote ?? "",
+    kpis: {
+      totalMembersTracked: data.kpis?.totalMembersTracked ?? 0,
+      houseMembersWithRecordedVotes: data.kpis?.houseMembersWithRecordedVotes ?? 0,
+      totalBillsTracked: data.kpis?.totalBillsTracked ?? 0,
+      billsWithRollCalls: data.kpis?.billsWithRollCalls ?? 0,
+      totalRecordedFloorVotes: data.kpis?.totalRecordedFloorVotes ?? 0,
+      totalNotVotingInstances: data.kpis?.totalNotVotingInstances ?? 0,
+    },
+    chamberSummary: data.chamberSummary ?? [],
+    bills: data.bills ?? [],
+  };
+}
+
+export async function getMetrics(): Promise<MetricsOverview> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 120_000);
+
+  try {
+    const res = await fetch(`${metricsApiBase()}/api/metrics`, {
+      cache: "no-store",
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`API error ${res.status}: ${body}`);
+    }
+
+    return normalizeMetricsOverview(await res.json());
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error("Request timed out while waiting for legislation overview");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export function getMetricsExportUrl(): string {
-  const publicUrl = process.env.NEXT_PUBLIC_API_URL;
-  if (publicUrl) return `${publicUrl}/api/metrics/export`;
-  if (typeof window !== "undefined") {
-    return `${window.location.origin}/api/metrics/export`;
-  }
-  return "/api/metrics/export";
+  return `${metricsApiBase()}/api/metrics/export`;
 }

@@ -6,7 +6,7 @@ import { ENABLE_BOARD_PAGE } from "@/lib/feature-flags";
 const NAV_LINKS = [
   { href: "/bills", label: "Tracked Bills" },
   { href: "/metrics", label: "Metrics" },
-  { href: "/about", label: "Methodology" },
+  { href: "/about", label: "Policy Positions" },
   { href: "/partners", label: "Partners" },
   ...(ENABLE_BOARD_PAGE ? [{ href: "/board", label: "Board" }] : []),
   { href: "/disclaimer", label: "Disclaimer" },

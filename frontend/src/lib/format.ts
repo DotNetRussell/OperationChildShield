@@ -1,4 +1,4 @@
-import type { MemberSummary } from "./types";
+import type { MemberSummary, MemberVote } from "./types";
 
 const STATE_CODES: Record<string, string> = {
   Alabama: "AL", Alaska: "AK", Arizona: "AZ", Arkansas: "AR", California: "CA",
@@ -75,6 +75,51 @@ export function gradeCircleClass(grade: string): string {
   if (letter === "D") return "grade-circle-d";
   if (letter === "F") return "grade-circle-f";
   return "grade-circle-na";
+}
+
+export function resolvePolicyConsistent(
+  policyConsistent: boolean | null | undefined,
+  scoreImpact?: string | null
+): boolean | null {
+  if (policyConsistent === true || policyConsistent === false) {
+    return policyConsistent;
+  }
+  const impact = scoreImpact?.toLowerCase() ?? "";
+  if (impact.includes("consistent with ocs")) {
+    return !impact.includes("not consistent");
+  }
+  return null;
+}
+
+export interface MemberVoteSummary {
+  recorded: number;
+  consistent: number;
+  notConsistent: number;
+  notVoting: number;
+}
+
+export function summarizeMemberVotes(votes: MemberVote[]): MemberVoteSummary {
+  let recorded = 0;
+  let consistent = 0;
+  let notConsistent = 0;
+  let notVoting = 0;
+
+  for (const vote of votes) {
+    const policy = resolvePolicyConsistent(
+      vote.policy_consistent,
+      vote.score_impact
+    );
+    if (policy !== null) {
+      recorded += 1;
+      if (policy) consistent += 1;
+      else notConsistent += 1;
+    }
+    if (vote.vote_cast.toLowerCase() === "not voting") {
+      notVoting += 1;
+    }
+  }
+
+  return { recorded, consistent, notConsistent, notVoting };
 }
 
 export function voteToLabel(vote: string): { label: string; className: string } {

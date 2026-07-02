@@ -1,15 +1,11 @@
-import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { GradeFilter } from "@/components/GradeFilter";
+import { PolicyLegend } from "@/components/PolicyLegend";
 import { MemberFiltersBar } from "@/components/MemberFiltersBar";
 import { PoliticianGrid } from "@/components/PoliticianGrid";
 import { SearchBar } from "@/components/SearchBar";
 import {
-  DEFAULT_GRADE_FILTER,
   getMembers,
-  GRADE_FILTER_PAGE_SIZE,
   LANDING_PAGE_SIZE,
-  resolveGradeFilter,
   SEARCH_PAGE_SIZE,
   type MemberFilters,
 } from "@/lib/api";
@@ -21,15 +17,11 @@ interface HomePageProps {
 async function GridSection({
   filters,
   isSearch,
-  gradeFilter,
-  hasSearch,
   partyFilter,
   stateFilter,
 }: {
   filters: MemberFilters;
   isSearch: boolean;
-  gradeFilter?: string;
-  hasSearch: boolean;
   partyFilter?: string;
   stateFilter?: string;
 }) {
@@ -45,14 +37,13 @@ async function GridSection({
     error = e instanceof Error ? e.message : "Failed to load members";
   }
 
-  const enableInfiniteScroll = !hasSearch && !gradeFilter;
+  const enableInfiniteScroll = !isSearch;
 
   return (
     <PoliticianGrid
       members={members}
       total={total}
       isSearch={isSearch}
-      gradeFilter={gradeFilter}
       partyFilter={partyFilter}
       stateFilter={stateFilter}
       error={error}
@@ -60,7 +51,6 @@ async function GridSection({
       listFilters={
         enableInfiniteScroll
           ? {
-              sort: "grade",
               limit: LANDING_PAGE_SIZE,
               offset: 0,
               party: filters.party,
@@ -76,41 +66,30 @@ async function GridSection({
 export default async function HomePage({ searchParams }: HomePageProps) {
   const params = await searchParams;
   const hasSearch = Boolean(params.search?.trim());
-  const rawGrade = params.grade?.trim();
-  const hasOtherParams = Boolean(
-    params.search?.trim() ||
-      params.party?.trim() ||
-      params.state?.trim() ||
-      params.chamber?.trim()
-  );
-
-  if (rawGrade === undefined && !hasOtherParams) {
-    redirect(`/?grade=${DEFAULT_GRADE_FILTER}`);
-  }
-
-  const gradeFilter = resolveGradeFilter(params.grade);
   const partyFilter = params.party?.trim() || undefined;
   const stateFilter = params.state?.trim() || undefined;
 
-  let limit = LANDING_PAGE_SIZE;
-  if (gradeFilter) limit = GRADE_FILTER_PAGE_SIZE;
-  else if (hasSearch) limit = SEARCH_PAGE_SIZE;
+  const limit = hasSearch ? SEARCH_PAGE_SIZE : LANDING_PAGE_SIZE;
 
   const filters: MemberFilters = {
     search: params.search,
     chamber: params.chamber,
     state: params.state,
     party: params.party,
-    grade: gradeFilter,
-    // Grade sort is applied client-side so the page renders immediately while the
-    // grade index warms up on first backend load.
-    sort: gradeFilter ? "grade" : undefined,
     limit,
     offset: 0,
   };
 
   return (
     <div className="max-w-[1280px] mx-auto px-4 py-8">
+      <p className="text-center text-muted text-sm mb-4 max-w-2xl mx-auto leading-relaxed">
+        A neutral public voting record on child safety legislation. Each recorded
+        floor vote is compared to Operation Child Shield&apos;s board-adopted policy
+        positions.
+      </p>
+
+      <PolicyLegend className="mb-8" />
+
       <Suspense
         fallback={
           <div className="h-[72px] max-w-[620px] mx-auto mb-10 bg-surface/50 rounded-xl animate-pulse" />
@@ -123,14 +102,10 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         <MemberFiltersBar />
       </Suspense>
 
-      <Suspense fallback={<div className="h-12 mb-8 bg-surface/50 rounded-xl animate-pulse" />}>
-        <GradeFilter />
-      </Suspense>
-
       <Suspense
         fallback={
           <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
-            {Array.from({ length: gradeFilter ? 8 : 6 }).map((_, i) => (
+            {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="h-[340px] bg-surface rounded-[10px] animate-pulse" />
             ))}
           </div>
@@ -139,8 +114,6 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         <GridSection
           filters={filters}
           isSearch={hasSearch}
-          gradeFilter={gradeFilter}
-          hasSearch={hasSearch}
           partyFilter={partyFilter}
           stateFilter={stateFilter}
         />

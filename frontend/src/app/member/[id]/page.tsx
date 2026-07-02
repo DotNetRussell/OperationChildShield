@@ -1,11 +1,18 @@
 import Image from "next/image";
 import Link from "next/link";
 import { MemberContactCard } from "@/components/MemberContactCard";
+import { MemberVotePieChart } from "@/components/MemberVotePieChart";
+import { MemberVoteStats } from "@/components/MemberVoteStats";
+import { PolicyLegend } from "@/components/PolicyLegend";
 import { ShareButton } from "@/components/ShareButton";
 import { VoteTable } from "@/components/VoteTable";
 import { PartyBadge } from "@/components/PartyBadge";
 import { StateBadge } from "@/components/StateBadge";
-import { formatDisplayName, gradeCircleClass } from "@/lib/format";
+import {
+  formatDisplayName,
+  resolvePolicyConsistent,
+  summarizeMemberVotes,
+} from "@/lib/format";
 import { getReportCard } from "@/lib/api";
 
 interface MemberPageProps {
@@ -21,7 +28,7 @@ export default async function MemberPage({ params }: MemberPageProps) {
   try {
     card = await getReportCard(id);
   } catch (e) {
-    error = e instanceof Error ? e.message : "Failed to load report card";
+    error = e instanceof Error ? e.message : "Failed to load voting record";
   }
 
   if (error || !card) {
@@ -39,7 +46,7 @@ export default async function MemberPage({ params }: MemberPageProps) {
   const displayName = formatDisplayName(card.name);
   const prefix = card.chamber === "Senate" ? "Sen." : "Rep.";
   const subtitle = `${prefix} ${card.state}${card.district ? `-${card.district}` : ""}`;
-
+  const voteSummary = summarizeMemberVotes(card.key_votes);
 
   return (
     <div className="max-w-[900px] mx-auto px-4 py-8">
@@ -63,16 +70,14 @@ export default async function MemberPage({ params }: MemberPageProps) {
             )}
           </div>
           <div className="flex-1">
-            <h1 className="text-2xl font-bold m-0">{displayName}</h1>
+            <p className="text-xs font-bold uppercase tracking-wider text-blue-100 m-0">
+              Child Safety Voting Record
+            </p>
+            <h1 className="text-2xl font-bold m-0 mt-1">{displayName}</h1>
             <p className="text-[#cbd5e1] m-0 mt-0.5">{subtitle}</p>
             <div className="mt-2">
               <PartyBadge party={card.party} variant="header" />
             </div>
-          </div>
-          <div
-            className={`w-[72px] h-[72px] rounded-full flex items-center justify-center text-2xl font-black border-[5px] border-white text-white ${gradeCircleClass(card.letter_grade)}`}
-          >
-            {card.letter_grade}
           </div>
         </div>
 
@@ -82,25 +87,32 @@ export default async function MemberPage({ params }: MemberPageProps) {
         </div>
 
         <div className="p-6">
-          <div className="flex items-baseline gap-2">
-            <span className="text-[2.75rem] font-extrabold text-blue font-mono leading-none">
-              {card.score_percent}%
-            </span>
-            <span className="text-text-subtle">Protection Score</span>
-          </div>
+          <p className="text-muted text-sm leading-relaxed m-0">
+            This page reports how this official voted on tracked child safety
+            legislation, with each recorded floor vote compared to Operation Child
+            Shield&apos;s board-adopted policy positions.
+          </p>
 
-          <div className="mt-6 grid grid-cols-3 gap-4 text-center">
-            <div className="bg-surface-muted rounded-lg p-4 border border-card-border">
-              <p className="text-2xl font-bold text-blue m-0">{card.votes_scored}</p>
-              <p className="text-xs text-muted mt-1 uppercase tracking-wide">Votes Scored</p>
+          <MemberVoteStats summary={voteSummary} />
+
+          {voteSummary.recorded > 0 && (
+            <div className="mt-4 max-w-sm">
+              <MemberVotePieChart votes={card.key_votes} compact={false} />
             </div>
+          )}
+
+          <div className="mt-4 grid grid-cols-2 gap-4 text-center">
             <div className="bg-surface-muted rounded-lg p-4 border border-card-border">
               <p className="text-2xl font-bold text-blue m-0">{card.votes_tracked}</p>
-              <p className="text-xs text-muted mt-1 uppercase tracking-wide">Bills Tracked</p>
+              <p className="text-xs text-muted mt-1 uppercase tracking-wide">
+                Bills Tracked
+              </p>
             </div>
             <div className="bg-surface-muted rounded-lg p-4 border border-card-border">
-              <p className="text-2xl font-bold text-blue m-0">{card.letter_grade}</p>
-              <p className="text-xs text-muted mt-1 uppercase tracking-wide">Letter Grade</p>
+              <p className="text-2xl font-bold text-blue m-0">{voteSummary.notVoting}</p>
+              <p className="text-xs text-muted mt-1 uppercase tracking-wide">
+                Not Voting
+              </p>
             </div>
           </div>
 
@@ -110,9 +122,6 @@ export default async function MemberPage({ params }: MemberPageProps) {
               bioguideId={card.bioguide_id}
               name={card.name}
               party={card.party}
-              letterGrade={card.letter_grade}
-              scorePercent={card.score_percent}
-              votesScored={card.votes_scored}
               votesTracked={card.votes_tracked}
               keyVotes={card.key_votes}
               chamber={card.chamber}
@@ -132,7 +141,8 @@ export default async function MemberPage({ params }: MemberPageProps) {
       </div>
 
       <div className="mt-8">
-        <h2 className="text-xl font-bold text-blue mb-4">All Key Votes on Child Protection</h2>
+        <h2 className="text-xl font-bold text-blue mb-2">Votes on Child Protection Legislation</h2>
+        <PolicyLegend className="mb-4 justify-start" />
         <div className="bg-surface rounded-[10px] p-5 shadow-[0_6px_12px_-2px_rgb(0_0_0_/_0.1)] border border-card-border">
           <VoteTable votes={card.key_votes} />
         </div>

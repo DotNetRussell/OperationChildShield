@@ -13,7 +13,6 @@ interface PoliticianGridProps {
   members: MemberSummary[];
   total?: number;
   isSearch?: boolean;
-  gradeFilter?: string;
   partyFilter?: string;
   stateFilter?: string;
   error?: string | null;
@@ -33,7 +32,6 @@ export function PoliticianGrid({
   members: initialMembers,
   total: initialTotal = 0,
   isSearch = false,
-  gradeFilter,
   partyFilter,
   stateFilter,
   error,
@@ -44,7 +42,6 @@ export function PoliticianGrid({
   const [members, setMembers] = useState(initialMembers);
   const [total, setTotal] = useState(initialTotal);
   const [loadingMore, setLoadingMore] = useState(false);
-
   const [loadError, setLoadError] = useState<string | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -53,32 +50,6 @@ export function PoliticianGrid({
     setTotal(initialTotal);
     setLoadError(null);
   }, [initialMembers, initialTotal]);
-
-  useEffect(() => {
-    if (!infiniteScroll || !listFilters || gradeFilter || isSearch) return;
-
-    let cancelled = false;
-
-    fetchMembersClient({
-      ...listFilters,
-      sort: "grade",
-      limit: LANDING_PAGE_SIZE,
-      offset: 0,
-    })
-      .then((data) => {
-        if (!cancelled) {
-          setMembers(data.members);
-          setTotal(data.total);
-        }
-      })
-      .catch(() => {
-        /* keep the fast server-rendered list if grade sorting is still warming up */
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [infiniteScroll, listFilters, gradeFilter, isSearch]);
 
   const hasMore = infiniteScroll && members.length < total;
 
@@ -141,32 +112,16 @@ export function PoliticianGrid({
   if (members.length === 0) {
     return (
       <p className="text-center text-muted py-12">
-        {gradeFilter
-          ? `No members found with grade ${gradeFilter}${activeFilterLabel ? ` (${activeFilterLabel})` : ""}.`
-          : activeFilterLabel
-            ? `No members match ${activeFilterLabel}. Try adjusting your filters.`
-            : "No members match your search. Try a different name or state."}
+        {activeFilterLabel
+          ? `No members match ${activeFilterLabel}. Try adjusting your filters.`
+          : "No members match your search. Try a different name or state."}
       </p>
     );
   }
 
   return (
     <>
-      {gradeFilter && (
-        <p className="text-center text-muted text-sm mb-6">
-          Showing {members.length}
-          {total > members.length ? ` of ${total}` : ""} member
-          {total === 1 ? "" : "s"} with grade{" "}
-          <strong className="text-foreground">{gradeFilter}</strong>
-          {activeFilterLabel && (
-            <>
-              {" "}
-              ({activeFilterLabel})
-            </>
-          )}
-        </p>
-      )}
-      {!gradeFilter && activeFilterLabel && !isSearch && (
+      {!isSearch && activeFilterLabel && (
         <p className="text-center text-muted text-sm mb-6">
           Showing {members.length}
           {total > members.length ? ` of ${total}` : ""} member
@@ -175,20 +130,14 @@ export function PoliticianGrid({
           {total > members.length ? ". Scroll down to load more." : "."}
         </p>
       )}
-      {!gradeFilter && !isSearch && !activeFilterLabel && total > members.length && (
+      {!isSearch && !activeFilterLabel && total > members.length && (
         <p className="text-center text-muted text-sm mb-6 px-2">
-          Showing {members.length} of {total} members, sorted worst grade first
-          (F → N/A). Scroll down to load more.{" "}
+          Showing {members.length} of {total} members. Scroll down to load more.{" "}
           <strong className="text-foreground">Search by name or state</strong> to find a
           specific representative.
         </p>
       )}
-      {!gradeFilter && !isSearch && !activeFilterLabel && total <= members.length && total > LANDING_PAGE_SIZE && (
-        <p className="text-center text-muted text-sm mb-6 px-2">
-          Showing all {total} members, sorted worst grade first (F → N/A).
-        </p>
-      )}
-      {!gradeFilter && isSearch && (
+      {isSearch && (
         <p className="text-center text-muted text-sm mb-6">
           {members.length === total
             ? `Found ${total} member${total === 1 ? "" : "s"} matching your search${activeFilterLabel ? ` (${activeFilterLabel})` : ""}.`

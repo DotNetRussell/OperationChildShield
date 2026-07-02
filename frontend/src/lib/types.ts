@@ -8,7 +8,6 @@ export interface MemberSummary {
   district: string | number | null;
   imageUrl: string | null;
   congressUrl: string;
-  letterGrade?: string;
 }
 
 export interface MemberContact {
@@ -31,8 +30,7 @@ export interface MemberVote {
   congress_url: string;
   roll_call_url: string | null;
   score_impact: string;
-  points_earned: number;
-  points_possible: number;
+  policy_consistent: boolean | null;
 }
 
 export interface ReportCard {
@@ -43,10 +41,7 @@ export interface ReportCard {
   party: string;
   district: string | null;
   image_url: string | null;
-  score_percent: number;
-  letter_grade: string;
   votes_tracked: number;
-  votes_scored: number;
   key_votes: MemberVote[];
   congress_profile_url: string;
   contact: MemberContact | null;

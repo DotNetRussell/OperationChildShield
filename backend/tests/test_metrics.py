@@ -5,7 +5,10 @@ from app.metrics import (
     _mean,
     _median,
     _participated,
+    _policy_consistent_from_vote,
     _score_histogram,
+    _vote_cast_bucket,
+    build_metrics_payload,
     is_passing_score,
     normalize_party,
     seniority_bucket,
@@ -76,3 +79,59 @@ def test_score_histogram_bins_scores():
     assert bins[0]["count"] == 1
     assert bins[1]["count"] == 1
     assert bins[-1]["count"] == 2
+
+
+def test_vote_cast_bucket():
+    assert _vote_cast_bucket("Aye") == "yes"
+    assert _vote_cast_bucket("Nay") == "no"
+    assert _vote_cast_bucket("Not Voting") == "notVoting"
+
+
+def test_policy_consistent_from_vote():
+    assert _policy_consistent_from_vote({"policy_consistent": True}) is True
+    assert _policy_consistent_from_vote({"policy_consistent": False}) is False
+    assert (
+        _policy_consistent_from_vote(
+            {"score_impact": "Consistent with OCS board-adopted policy position"}
+        )
+        is True
+    )
+    assert (
+        _policy_consistent_from_vote(
+            {"score_impact": "Not consistent with OCS board-adopted policy position"}
+        )
+        is False
+    )
+
+
+def test_build_metrics_payload_has_no_member_rankings():
+    members = [
+        {
+            "bioguideId": "A000001",
+            "name": "Rep. Example",
+            "chamber": "House",
+            "state": "Texas",
+            "keyVotes": [
+                {
+                    "bill_id": "hr6544-117",
+                    "vote_cast": "Aye",
+                    "policy_consistent": True,
+                }
+            ],
+            "votesTracked": 5,
+            "recordedVotes": 1,
+            "policyConsistentVotes": 1,
+            "policyNotConsistentVotes": 0,
+            "votesParticipated": 1,
+            "notVotingCount": 0,
+        }
+    ]
+
+    payload = build_metrics_payload(members, 119)
+    assert payload["congress"] == 119
+    assert "members" not in payload
+    assert "performers" not in payload
+    assert "scoreDistribution" not in payload
+    assert payload["kpis"]["totalMembersTracked"] == 1
+    assert "bills" in payload
+    assert "chamberSummary" in payload

@@ -145,9 +145,52 @@ def test_serialize_report_card_includes_contact_and_votes():
     card = build_report_card(member, votes)
     data = serialize_report_card(card)
     assert data["bioguide_id"] == "T000001"
+    assert "score_percent" not in data
+    assert "letter_grade" not in data
+    assert "votes_scored" not in data
     assert len(data["key_votes"]) == 1
-    assert data["key_votes"][0]["vote_cast"] == VoteValue.AYE
+    assert data["key_votes"][0]["vote_cast"] == "Aye"
+    assert "points_earned" not in data["key_votes"][0]
     assert data["contact"] is None or isinstance(data["contact"], dict)
+
+
+def test_report_card_from_cache_handles_stripped_api_fields():
+    from app.services import _report_card_from_cache
+
+    member = {
+        "bioguideId": "T000001",
+        "directOrderName": "Jane Doe",
+        "firstName": "Jane",
+        "lastName": "Doe",
+        "state": "California",
+        "partyName": "Democratic",
+        "terms": [{"congress": 119, "chamber": "House of Representatives"}],
+    }
+    bill = get_scoring_bills()[0]
+    votes = [
+        MemberVoteRecord(
+            bill_id=bill.bill_id,
+            bill_title=bill.title,
+            bill_number=bill.display_number,
+            category=bill.category.value,
+            vote_cast=VoteValue.AYE,
+            vote_date="2025-01-01",
+            vote_question="On Passage",
+            vote_result="Passed",
+            congress_url=bill.congress_url,
+            roll_call_url="https://www.congress.gov/votes/house/119-1/1",
+            score_impact="Consistent with OCS board-adopted policy position",
+            points_earned=1.0,
+            points_possible=1.0,
+            policy_consistent=True,
+        )
+    ]
+    card = build_report_card(member, votes)
+    cached = serialize_report_card(card)
+    restored = _report_card_from_cache(cached)
+    assert restored.bioguide_id == "T000001"
+    assert len(restored.key_votes) == 1
+    assert restored.key_votes[0].policy_consistent is True
 
 
 def test_serialize_vote_returns_dict():
@@ -169,4 +212,5 @@ def test_serialize_vote_returns_dict():
     )
     data = serialize_vote(record)
     assert data["bill_id"] == bill.bill_id
-    assert data["vote_cast"] == VoteValue.NAY
+    assert data["vote_cast"] == "Nay"
+    assert "points_earned" not in data

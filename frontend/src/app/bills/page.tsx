@@ -13,15 +13,15 @@ const STATUS_SECTIONS: {
 }[] = [
   {
     key: "scored",
-    title: "House Roll Call Votes (Scored)",
+    title: "House Roll Call Votes (Recorded)",
     description:
-      "These bills have recorded House roll-call votes. Member positions on these votes determine Protection Scores.",
+      "These bills have recorded House roll-call votes. Member positions appear on individual voting records and are compared to OCS policy positions.",
     match: (b) => b.scorable,
     badgeClass: "bg-red/10 text-red",
   },
   {
     key: "floor",
-    title: "Floor Action (Tracked, Not Individually Scored)",
+    title: "Floor Action (Tracked, No Per-Member Roll Call)",
     description:
       "Passed by voice vote or unanimous consent. Congress.gov does not publish per-member roll calls for these votes.",
     match: (b) =>
@@ -33,7 +33,7 @@ const STATUS_SECTIONS: {
     key: "introduced",
     title: "Introduced & Early Stage (Tracked)",
     description:
-      "Major child-protection bills we monitor. No House roll-call vote yet, so they do not affect scores.",
+      "Major child-protection bills we monitor. No House roll-call vote yet, so no per-member vote is recorded.",
     match: (b) => b.floorStatus === "introduced",
     badgeClass: "bg-muted/10 text-muted",
   },
@@ -48,7 +48,7 @@ function BillCard({ bill, badgeClass }: { bill: TrackedBill; badgeClass: string 
         </span>
         <span className="text-xs text-muted">{bill.congress}th Congress</span>
         <span className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full ${badgeClass}`}>
-          {bill.scorable ? "Scored" : bill.floorStatusLabel.split("—")[0].trim()}
+          {bill.scorable ? "Roll call" : bill.floorStatusLabel.split("—")[0].trim()}
         </span>
       </div>
       <h3 className="mt-2 font-bold text-foreground leading-snug">{bill.title}</h3>
@@ -87,10 +87,10 @@ export default async function BillsPage() {
 
       <h1 className="text-3xl font-bold text-blue mt-4">Tracked Legislation</h1>
       <p className="mt-2 text-muted max-w-3xl">
-        {bills.length} bills monitored across the 117th–119th Congresses. Protection
-        Scores are based on <strong>{scoredCount} House roll-call votes</strong> on
+        {bills.length} bills monitored across the 117th–119th Congresses.{" "}
+        <strong>{scoredCount} bills</strong> have recorded House roll-call votes on
         verified child-protection legislation. Bills passed by voice vote or in the
-        Senate are tracked for context but do not produce per-member House scores.
+        Senate are tracked for context but do not produce per-member House vote records.
       </p>
 
       {error && (
