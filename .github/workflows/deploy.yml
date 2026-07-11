@@ -116,19 +116,52 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Prefer DEPLOY_SSH_KEY_B64 (single-line base64) - multiline PEM paste often becomes empty.
+      # Falls back to DEPLOY_SSH_KEY (raw PEM).
       - name: Configure SSH
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_SSH_KEY_B64: ${{ secrets.DEPLOY_SSH_KEY_B64 }}
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
         run: |
-          test -n "$DEPLOY_SSH_KEY" || { echo "Missing secret DEPLOY_SSH_KEY"; exit 1; }
-          test -n "$DEPLOY_HOST" || { echo "Missing secret DEPLOY_HOST"; exit 1; }
-          test -n "$DEPLOY_USER" || { echo "Missing secret DEPLOY_USER"; exit 1; }
+          set -euo pipefail
+          echo "Secret presence check (values never printed):"
+          if [ -n "${DEPLOY_HOST:-}" ]; then echo "  DEPLOY_HOST: set (${#DEPLOY_HOST} chars)"; else echo "  DEPLOY_HOST: EMPTY"; fi
+          if [ -n "${DEPLOY_USER:-}" ]; then echo "  DEPLOY_USER: set (${#DEPLOY_USER} chars)"; else echo "  DEPLOY_USER: EMPTY"; fi
+          if [ -n "${DEPLOY_SSH_KEY_B64:-}" ]; then echo "  DEPLOY_SSH_KEY_B64: set (${#DEPLOY_SSH_KEY_B64} chars)"; else echo "  DEPLOY_SSH_KEY_B64: EMPTY"; fi
+          if [ -n "${DEPLOY_SSH_KEY:-}" ]; then echo "  DEPLOY_SSH_KEY: set (${#DEPLOY_SSH_KEY} chars)"; else echo "  DEPLOY_SSH_KEY: EMPTY"; fi
+
           mkdir -p ~/.ssh
-          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 700 ~/.ssh
+
+          if [ -n "${DEPLOY_SSH_KEY_B64:-}" ]; then
+            echo "$DEPLOY_SSH_KEY_B64" | base64 -d > ~/.ssh/deploy_key
+          elif [ -n "${DEPLOY_SSH_KEY:-}" ]; then
+            # Normalize newlines / strip Windows CR
+            printf '%s\n' "$DEPLOY_SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          else
+            echo "::error::Neither DEPLOY_SSH_KEY_B64 nor DEPLOY_SSH_KEY is available to this workflow."
+            echo "Add a Repository secret (not Environment secret, not Variable):"
+            echo "  DEPLOY_SSH_KEY_B64 = output of: base64 -w0 ~/.ssh/ocs_prod_deploy"
+            echo "Or ensure DEPLOY_SSH_KEY is under Settings → Secrets and variables → Actions → Repository secrets"
+            echo "Then re-run the workflow (old runs do not pick up new secrets mid-flight)."
+            exit 1
+          fi
+
           chmod 600 ~/.ssh/deploy_key
+          # Validate key material
+          if ! grep -q "BEGIN.*PRIVATE KEY" ~/.ssh/deploy_key; then
+            echo "::error::Deploy key file does not look like a private key (missing BEGIN PRIVATE KEY header)."
+            exit 1
+          fi
+          ssh-keygen -y -f ~/.ssh/deploy_key >/dev/null
+
+          test -n "${DEPLOY_HOST:-}" || { echo "::error::Missing DEPLOY_HOST"; exit 1; }
+          test -n "${DEPLOY_USER:-}" || { echo "::error::Missing DEPLOY_USER"; exit 1; }
+
           ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          echo "SSH key ready."
 
       - name: Sync deploy files
         env:
@@ -136,8 +169,9 @@ jobs:
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
         run: |
+          set -euo pipefail
           PATH_ON_SERVER="${DEPLOY_PATH:-/opt/operationchildshield}"
-          rsync -avz -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes" \
+          rsync -avz -e "ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes" \
             docker-compose.prod.ghcr.yml \
             scripts/server-pull-and-up.sh \
             "${DEPLOY_USER}@${DEPLOY_HOST}:${PATH_ON_SERVER}/"
@@ -150,9 +184,11 @@ jobs:
           IMAGE_TAG: ${{ needs.build-and-push.outputs.image_tag }}
           PUBLIC_SITE_URL: ${{ secrets.PUBLIC_SITE_URL }}
         run: |
+          set -euo pipefail
           PATH_ON_SERVER="${DEPLOY_PATH:-/opt/operationchildshield}"
-          SITE_URL="${PUBLIC_SITE_URL:-http://${DEPLOY_HOST}}"
-          ssh -i ~/.ssh/deploy_key "${DEPLOY_USER}@${DEPLOY_HOST}" \
+          SITE_URL="${PUBLIC_SITE_URL:-https://operationchildshield.org}"
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes \
+            "${DEPLOY_USER}@${DEPLOY_HOST}" \
             "cd '${PATH_ON_SERVER}' && chmod +x scripts/server-pull-and-up.sh && \
              IMAGE_TAG='${IMAGE_TAG}' \
              NEXT_PUBLIC_API_URL='${SITE_URL}' \
@@ -164,7 +200,8 @@ jobs:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           PUBLIC_SITE_URL: ${{ secrets.PUBLIC_SITE_URL }}
         run: |
-          BASE="${PUBLIC_SITE_URL:-http://${DEPLOY_HOST}}"
+          set -euo pipefail
+          BASE="${PUBLIC_SITE_URL:-https://operationchildshield.org}"
           for i in 1 2 3 4 5 6 7 8 9 10; do
             if curl -fsS "${BASE}/api/health" | grep -q '"status"'; then
               echo "Health OK at ${BASE}/api/health"
