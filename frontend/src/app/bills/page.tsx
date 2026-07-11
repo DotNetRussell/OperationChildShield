@@ -13,17 +13,17 @@ const STATUS_SECTIONS: {
 }[] = [
   {
     key: "scored",
-    title: "House Roll Call Votes (Recorded)",
+    title: "Votes You Can Check",
     description:
-      "These bills have recorded House roll-call votes. Member positions appear on individual voting records and are compared to OCS policy positions.",
+      "These bills have recorded House roll-call votes. Open any lawmaker to see how they voted.",
     match: (b) => b.scorable,
     badgeClass: "bg-red/10 text-red",
   },
   {
     key: "floor",
-    title: "Floor Action (Tracked, No Per-Member Roll Call)",
+    title: "Passed Without a Public Roll Call",
     description:
-      "Passed by voice vote or unanimous consent. Congress.gov does not publish per-member roll calls for these votes.",
+      "Advanced by voice vote or unanimous consent. Congress.gov does not list individual member votes for these.",
     match: (b) =>
       !b.scorable &&
       ["passed_house", "passed_senate", "passed_both"].includes(b.floorStatus),
@@ -31,9 +31,9 @@ const STATUS_SECTIONS: {
   },
   {
     key: "introduced",
-    title: "Introduced & Early Stage (Tracked)",
+    title: "Still Moving Through Congress",
     description:
-      "Major child-protection bills we monitor. No House roll-call vote yet, so no per-member vote is recorded.",
+      "Major child-protection bills we are watching. No House roll-call vote yet.",
     match: (b) => b.floorStatus === "introduced",
     badgeClass: "bg-muted/10 text-muted",
   },
@@ -48,7 +48,7 @@ function BillCard({ bill, badgeClass }: { bill: TrackedBill; badgeClass: string 
         </span>
         <span className="text-xs text-muted">{bill.congress}th Congress</span>
         <span className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full ${badgeClass}`}>
-          {bill.scorable ? "Roll call" : bill.floorStatusLabel.split("—")[0].trim()}
+          {bill.scorable ? "Roll call" : bill.floorStatusLabel.split("(")[0].trim()}
         </span>
       </div>
       <h3 className="mt-2 font-bold text-foreground leading-snug">{bill.title}</h3>
@@ -60,7 +60,7 @@ function BillCard({ bill, badgeClass }: { bill: TrackedBill; badgeClass: string 
         rel="noopener noreferrer"
         className="mt-3 inline-block text-sm font-bold text-red hover:underline"
       >
-        View on Congress.gov →
+        Read the Bill →
       </a>
     </div>
   );
@@ -80,14 +80,14 @@ export default async function BillsPage() {
   const scoredCount = bills.filter((b) => b.scorable).length;
 
   return (
-    <div className="max-w-[1280px] mx-auto px-4 py-8">
+    <div className="page-container py-8">
       <Link href="/" className="text-sm text-muted hover:text-blue">
-        ← Back to search
+        ← Back to lawmakers
       </Link>
 
-      <h1 className="text-3xl font-bold text-blue mt-4">Tracked Legislation</h1>
+      <h1 className="text-3xl font-bold text-blue mt-4">The Bills That Matter</h1>
       <p className="mt-2 text-muted max-w-3xl">
-        {bills.length} bills monitored across the 117th–119th Congresses.{" "}
+        {bills.length} bills monitored across the 117th-119th Congresses.{" "}
         <strong>{scoredCount} bills</strong> have recorded House roll-call votes on
         verified child-protection legislation. Bills passed by voice vote or in the
         Senate are tracked for context but do not produce per-member House vote records.

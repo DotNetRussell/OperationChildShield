@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Inter, Roboto_Mono } from "next/font/google";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { NcmecReportBanner } from "@/components/NcmecReportBanner";
+import { VisitTracker } from "@/components/VisitTracker";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
@@ -22,7 +25,7 @@ const SITE_URL =
 
 const SITE_TITLE = "Operation Child Shield";
 const SITE_DESCRIPTION =
-  "Unbiased, nonpartisan child safety voting records for Congress — factual vote data from Congress.gov compared to board-adopted policy positions.";
+  "See how Congress voted on child safety. Public records from Congress.gov, checked against Operation Child Shield policy.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -42,7 +45,7 @@ export const metadata: Metadata = {
         url: "/images/ocs-v2.jpg",
         width: 1254,
         height: 1254,
-        alt: "Operation Child Shield — protecting America's children through congressional accountability",
+        alt: "Operation Child Shield: protecting America's children through congressional accountability",
       },
     ],
   },
@@ -69,9 +72,13 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="min-h-full flex flex-col antialiased bg-background text-foreground transition-colors duration-200">
+        <NcmecReportBanner variant="banner" />
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />
+        <Suspense fallback={null}>
+          <VisitTracker />
+        </Suspense>
       </body>
     </html>
   );

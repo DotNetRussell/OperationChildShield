@@ -109,7 +109,7 @@ async def fetch_member_votes(
                     vote_result=record.vote_result,
                     congress_url=record.congress_url,
                     roll_call_url=record.roll_call_url,
-                    score_impact=bill.floor_status_label + " — no per-member roll call recorded",
+                    score_impact=bill.floor_status_label + " (no per-member roll call recorded)",
                     points_earned=0.0,
                     points_possible=0.0,
                 )

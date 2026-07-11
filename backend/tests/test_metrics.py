@@ -27,9 +27,9 @@ def test_normalize_party():
 
 def test_seniority_bucket():
     assert seniority_bucket(1) == "Freshman (1 term)"
-    assert seniority_bucket(2) == "2–4 terms"
-    assert seniority_bucket(4) == "2–4 terms"
-    assert seniority_bucket(5) == "5–8 terms"
+    assert seniority_bucket(2) == "2-4 terms"
+    assert seniority_bucket(4) == "2-4 terms"
+    assert seniority_bucket(5) == "5-8 terms"
     assert seniority_bucket(9) == "9+ terms (Senior)"
 
 
@@ -51,8 +51,8 @@ def test_participated_and_not_voting():
 
 
 def test_histogram_label():
-    assert _histogram_label(0, 10) == "0–9%"
-    assert _histogram_label(90, 100) == "90–100%"
+    assert _histogram_label(0, 10) == "0-9%"
+    assert _histogram_label(90, 100) == "90-100%"
 
 
 def test_mean_and_median():
@@ -111,6 +111,7 @@ def test_build_metrics_payload_has_no_member_rankings():
             "name": "Rep. Example",
             "chamber": "House",
             "state": "Texas",
+            "stateCode": "TX",
             "keyVotes": [
                 {
                     "bill_id": "hr6544-117",
@@ -135,3 +136,58 @@ def test_build_metrics_payload_has_no_member_rankings():
     assert payload["kpis"]["totalMembersTracked"] == 1
     assert "bills" in payload
     assert "chamberSummary" in payload
+    assert "byState" in payload
+    assert payload["byState"][0]["state"] == "Texas"
+    assert payload["byState"][0]["stateCode"] == "TX"
+    assert payload["byState"][0]["policyConsistencyRate"] == 100.0
+    assert "rank" not in payload["byState"][0]
+    assert "letterGrade" not in payload["byState"][0]
+
+
+def test_state_summaries_aggregate_house_votes_only():
+    from app.metrics import _state_summaries, resolve_state_code
+
+    assert resolve_state_code("California") == "CA"
+    assert resolve_state_code("California", "ca") == "CA"
+
+    members = [
+        {
+            "chamber": "House",
+            "state": "Ohio",
+            "stateCode": "OH",
+            "recordedVotes": 2,
+            "policyConsistentVotes": 1,
+            "policyNotConsistentVotes": 1,
+            "votesParticipated": 2,
+            "notVotingCount": 0,
+        },
+        {
+            "chamber": "Senate",
+            "state": "Ohio",
+            "stateCode": "OH",
+            "recordedVotes": 0,
+            "policyConsistentVotes": 5,
+            "policyNotConsistentVotes": 0,
+            "votesParticipated": 0,
+            "notVotingCount": 0,
+        },
+        {
+            "chamber": "House",
+            "state": "Maine",
+            "stateCode": "ME",
+            "recordedVotes": 0,
+            "policyConsistentVotes": 0,
+            "policyNotConsistentVotes": 0,
+            "votesParticipated": 0,
+            "notVotingCount": 1,
+        },
+    ]
+
+    rows = _state_summaries(members)
+    by_code = {r["stateCode"]: r for r in rows}
+    assert by_code["OH"]["recordedVotes"] == 2
+    assert by_code["OH"]["policyConsistencyRate"] == 50.0
+    assert by_code["OH"]["membersTracked"] == 2
+    assert by_code["OH"]["houseMembersTracked"] == 1
+    assert by_code["ME"]["policyConsistencyRate"] is None
+    assert by_code["ME"]["participationRate"] == 0.0

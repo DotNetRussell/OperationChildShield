@@ -28,7 +28,7 @@ function formatKeyVoteLine(
 ): string {
   const label = voteToLabel(vote.vote_cast).label;
   const billRef = vote.bill_number?.trim() || vote.bill_title.trim();
-  return `• ${billRef} — ${label}`;
+  return `• ${billRef} - ${label}`;
 }
 
 function keyVotesMessage(input: ShareReportInput): string {
@@ -48,7 +48,7 @@ export function buildShareText(
 ): string {
   const displayName = formatDisplayName(input.name);
   const party = formatPartyLabel(input.party);
-  const grade = input.letterGrade?.trim() || "—";
+  const grade = input.letterGrade?.trim() || " - ";
   const url = getReportPageUrl(input.bioguideId, origin);
 
   const scoreLine =
@@ -86,6 +86,6 @@ export function buildSharePayload(
 ): { title: string; text: string; url: string } {
   const url = getReportPageUrl(input.bioguideId, origin);
   const text = buildShareText(input, origin);
-  const title = `${formatDisplayName(input.name)} — Operation Child Shield`;
+  const title = `${formatDisplayName(input.name)} - Operation Child Shield`;
   return { title, text, url };
 }

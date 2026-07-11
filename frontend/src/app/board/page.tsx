@@ -7,7 +7,7 @@ import { ENABLE_BOARD_PAGE } from "@/lib/feature-flags";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Board of Directors",
+  title: "Leadership",
   description:
     "Meet the Operation Child Shield board of directors guiding our mission of nonpartisan congressional accountability on child protection legislation.",
 };
@@ -72,11 +72,17 @@ const officers: BoardMember[] = [
     name: "Pam James",
     role: "Secretary",
     membership: "Founding Voting Member",
+    photo: "/images/pam.jpg",
+    photoWidth: 1536,
+    photoHeight: 2048,
   },
   {
     name: "David Saldivar",
     role: "Treasurer",
     membership: "Founding Voting Member",
+    photo: "/images/david.jfif",
+    photoWidth: 1004,
+    photoHeight: 1211,
   },
 ];
 
@@ -139,12 +145,12 @@ export default function BoardPage() {
   if (!ENABLE_BOARD_PAGE) notFound();
 
   return (
-    <div className="max-w-[900px] mx-auto px-4 py-10">
+    <div className="page-container py-10">
       <Link href="/" className="text-sm text-muted hover:text-blue">
-        ← Back to search
+        ← Back to lawmakers
       </Link>
 
-      <h1 className="text-3xl font-bold text-blue mt-4">Board of Directors</h1>
+      <h1 className="text-3xl font-bold text-blue mt-4">The People Behind the Mission</h1>
       <p className="mt-3 text-muted leading-relaxed max-w-2xl">
         Operation Child Shield is guided by leaders committed to protecting children,
         advancing transparency, and holding elected officials accountable through

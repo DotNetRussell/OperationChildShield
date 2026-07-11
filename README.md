@@ -3,7 +3,7 @@
 [![Backend unit tests](https://img.shields.io/github/actions/workflow/status/DotNetRussell/OperationChildShield/ci.yml?label=Backend%20unit%20tests&logo=pytest&logoColor=white)](https://github.com/DotNetRussell/OperationChildShield/actions/workflows/ci.yml)
 [![Frontend unit tests](https://img.shields.io/github/actions/workflow/status/DotNetRussell/OperationChildShield/ci.yml?label=Frontend%20unit%20tests&logo=vitest&logoColor=white)](https://github.com/DotNetRussell/OperationChildShield/actions/workflows/ci.yml)
 
-A transparency platform that scores U.S. lawmakers on child protection legislation using public data from the [Congress.gov API](https://api.congress.gov/). The site publishes member report cards, a congressional metrics dashboard, and curated bill tracking with links back to official roll-call records.
+A transparency platform that publishes **neutral child safety voting records** for U.S. lawmakers using public data from the [Congress.gov API](https://api.congress.gov/). Each recorded floor vote is shown with how the member voted and whether that vote is consistent with Operation Child Shield board-adopted policy positions. The site does **not** publish letter grades, rankings, or scorecards.
 
 **Production:** [https://operationchildshield.org](https://operationchildshield.org)
 
@@ -15,11 +15,15 @@ A transparency platform that scores U.S. lawmakers on child protection legislati
 
 | Route | Description |
 |-------|-------------|
-| `/` | Member directory with search, party/state filters, grade filters, lazy-loaded report cards, and infinite scroll |
-| `/member/[bioguideId]` | Full protection report card with vote breakdown |
+| `/` | Member directory with search, party/state filters, lazy-loaded voting records, policy badges per vote, Yes/No pie charts, and infinite scroll |
+| `/member/[bioguideId]` | Full voting record: vote breakdown, policy badges, summary stats, Yes/No pie chart, Congress.gov links, social share |
 | `/bills` | 30 tracked bills in three sections: House roll-call (scored), floor action (tracked only), introduced |
-| `/metrics` | Congress-wide analytics dashboard (KPIs, party/chamber/state breakdowns, CSV export) |
-| `/about` | Scoring methodology |
+| `/metrics` | Bill-level roll-call statistics, **state heat map**, state policy-consistency table, charts |
+| `/states/[code]` | State overview: House policy-consistency KPIs and member list for that state |
+| `/learn` | Education for people seeking help/clarity and people who want to take action |
+| `/get-involved` | Signup form for volunteers, advocates, media, and partners |
+| `/the-facts` | **The Facts** — neutral bill bullets with Congress.gov deep links |
+| `/about` | Policy positions and methodology (links to The Facts) |
 | `/board` | Board of directors (enabled via `ENABLE_BOARD_PAGE`) |
 | `/disclaimer` | Legal disclaimer (entertainment purposes, public data sources, contact) |
 | `/partners` | Partner organizations |
@@ -40,25 +44,28 @@ Set `ENABLE_DONATE_PAGE` to `true`, add nav links in `Header.tsx` / `Footer.tsx`
 | Endpoint | Description |
 |----------|-------------|
 | `GET /api/health` | Service health, congress session, API key configured |
-| `GET /api/members` | Member directory (`search`, `chamber`, `state`, `party`, `grade`, `sort`, `limit`, `offset`) |
-| `GET /api/members/{bioguideId}/report-card` | Member protection report card |
+| `GET /api/members` | Member directory (`search`, `chamber`, `state`, `party`, `limit`, `offset`) |
+| `GET /api/members/{bioguideId}/report-card` | Member voting record (`key_votes`, `policy_consistent` per vote; no letter grades) |
 | `GET /api/bills` | Tracked legislation with floor-status metadata |
-| `GET /api/grades/summary` | Grade bucket counts for filter UI |
-| `GET /api/metrics` | Full metrics dashboard payload |
-| `GET /api/metrics/export` | CSV export of member-level metrics |
+| `GET /api/metrics` | Bill-level roll-call aggregates plus `byState` House policy-consistency totals (no grades/rankings) |
+| `GET /api/metrics/export` | CSV export of per-bill roll-call summaries |
+| `POST /api/involve` | Volunteer/advocate signup (JSON body; stored as JSONL under `CACHE_DIR`) |
+| `POST /api/analytics/event` | Ingest only — records a page view into server-side SQLite (`analytics.db`). **No public read API or UI.** Inspect via SSH + a SQLite browser. |
 
 Interactive API docs: `http://localhost:8000/docs` (local).
 
-### Scoring model (summary)
+### Voting record & policy model (summary)
 
-- **Only House roll-call votes** on verified bills drive letter grades.
-- Senate members and voice-vote bills are tracked but not individually scored (Congress.gov limitation).
-- Pro-protection stance: **Aye** = full credit; **Nay** = zero.
-- **Present** and **Not Voting** = zero credit, counted against the score.
+- **Only House roll-call votes** on verified bills produce per-member vote records with policy-consistency indicators.
+- Senate members and voice-vote bills are tracked for context but do not produce individual House roll-call records (Congress.gov limitation).
+- Each scored vote includes `vote_cast`, bill metadata, Congress.gov links, and `policy_consistent` (compared to board-adopted bill stances).
+- **Pro-protection bills:** Aye aligns with OCS policy; Nay does not. **Anti-protection bills:** Nay aligns; Aye does not.
+- Present and Not Voting are recorded factually and marked not consistent with policy where applicable.
+- Letter grades, percentage scores, and member rankings are **computed internally for policy alignment only** and are **stripped from all public API responses**.
 - Bills are verified against Congress.gov titles at backend startup.
-- Responses are file-cached for **24 hours** by default (`CACHE_TTL_SECONDS=86400`).
+- Responses use a **stale-while-revalidate** file cache (24-hour TTL by default): expired cache is served immediately while fresh data rebuilds in the background.
 
-Full methodology: in-app `/about` page.
+Full explanation: in-app `/about` page (Policy Positions).
 
 ---
 
@@ -85,7 +92,7 @@ Full methodology: in-app `/about` page.
 
 - Congress.gov publishes a rate limit of **5,000 requests per hour** per key (confirm current limits on their site).
 - This app caches all Congress.gov responses on disk for 24 hours to minimize API usage.
-- The heaviest operations are building the grade index and metrics dashboard (first request after cache expiry). Steady-state traffic is mostly cache hits.
+- The heaviest operations are building member report cards and the metrics dashboard (first request after cache expiry). Steady-state traffic is mostly cache hits with background revalidation.
 - **Never commit your API key.** Keep it only in `.env` (gitignored) or your deployment secrets.
 
 ### Verify your key works
@@ -120,7 +127,23 @@ docker compose up --build
 
 ## Local development (without Docker)
 
-### Backend
+Use the helper script for backend + frontend together:
+
+```bash
+./scripts/dev-local.sh start    # start both services
+./scripts/dev-local.sh status   # check PIDs / ports
+./scripts/dev-local.sh stop     # stop both
+./scripts/dev-local.sh restart  # restart both
+```
+
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:3000 |
+| Backend API | http://localhost:8000 |
+
+Logs: `data/backend-dev.log`, `data/frontend-dev.log`
+
+### Backend (manual)
 
 ```bash
 cd backend
@@ -136,7 +159,7 @@ export CORS_ORIGINS=http://localhost:3000
 uvicorn app.main:app --reload --port 8000
 ```
 
-### Frontend
+### Frontend (manual)
 
 ```bash
 cd frontend
@@ -173,20 +196,27 @@ OperationChildShield/
 │   ├── app/
 │   │   ├── bills.py              # Curated tracked legislation
 │   │   ├── bill_verification.py  # Startup Congress.gov title checks
+│   │   ├── cache.py              # File cache with stale-while-revalidate
+│   │   ├── cache_refresh.py      # Background cache revalidation
 │   │   ├── congress_client.py    # Congress.gov HTTP client + cache
-│   │   ├── scoring.py            # Vote scoring and letter grades
-│   │   ├── services.py           # Report cards, directory, grade index
-│   │   ├── metrics.py            # Metrics dashboard aggregation
+│   │   ├── scoring.py            # Vote scoring, policy_consistent, internal grades (not exposed)
+│   │   ├── services.py           # Report cards, directory, API serialization
+│   │   ├── metrics.py            # Bill-level roll-call aggregation (no member rankings)
 │   │   └── routes/               # FastAPI routers
-│   └── tests/                    # 91 pytest unit tests (no live API calls)
+│   └── tests/                    # 97 pytest unit tests (no live API calls)
 ├── frontend/
 │   └── src/
 │       ├── app/                  # Next.js App Router pages
-│       ├── components/           # UI components
-│       └── lib/                  # API client, types, utilities + Vitest tests
+│       ├── components/
+│       │   ├── charts/           # SVG pie and bar charts (metrics + member cards)
+│       │   ├── metrics/          # Metrics page chart sections
+│       │   ├── PolicyBadge.tsx   # Per-vote policy consistency badges
+│       │   └── PolicyLegend.tsx  # Badge legend (landing + member pages)
+│       └── lib/                  # API client, types, vote-count helpers + Vitest tests
 ├── .github/workflows/ci.yml      # Backend + frontend test CI on push/PR
 ├── scripts/
 │   ├── deploy-prod.example.sh    # Production deploy template (copy → deploy-prod.sh)
+│   ├── dev-local.sh              # Local backend + frontend without Docker
 │   ├── verify_bills.py           # Manual bill verification
 │   └── test.sh                   # Run backend + frontend tests
 ├── docker-compose.yml            # Local development stack
@@ -195,13 +225,13 @@ OperationChildShield/
 └── Makefile                      # Common dev commands
 ```
 
-Deployment scripts and production configs (`deploy-prod.sh`, `docker-compose.prod.yml`, `Caddyfile`, etc.) are **gitignored** — copy from the `*.example` templates locally.
+Deployment scripts and production configs (`deploy-prod.sh`, `docker-compose.prod.yml`, `Caddyfile`, `deploy_paramiko.py`, etc.) are **gitignored** — copy from the `*.example` templates locally. See [`AGENTS.md`](AGENTS.md).
 
 ---
 
 ## Testing
 
-**126 unit tests** total — **91 backend** (pytest) + **35 frontend** (Vitest). CI runs both suites on every push and pull request to `main` ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
+**132 unit tests** total — **97 backend** (pytest) + **35 frontend** (Vitest). CI runs both suites on every push and pull request to `main` ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
 
 ```bash
 # All tests (recommended — uses backend venv via scripts/test.sh)
@@ -224,9 +254,9 @@ make verify-bills
 
 | Module | Tests |
 |--------|-------|
-| `scoring`, `bills`, `utils` | Vote normalization, grades, bill catalog, member parsing |
-| `services`, `metrics` | Grade filters, report-card helpers, dashboard aggregation |
-| `cache`, `config`, `rate_limit` | File cache TTL, settings, concurrency limits |
+| `scoring`, `bills`, `utils` | Vote normalization, policy consistency, bill catalog, member parsing |
+| `services`, `metrics` | Report-card serialization, bill-level metrics aggregation |
+| `cache`, `config`, `rate_limit` | File cache TTL, stale-while-revalidate, settings, concurrency limits |
 | `bill_verification` | Congress.gov title verification (mocked client) |
 | `routes/health` | Health endpoint (isolated FastAPI app) |
 
@@ -236,9 +266,9 @@ Backend tests do **not** call Congress.gov — pure logic, mocked async clients,
 
 | Module | Tests |
 |--------|-------|
-| `format`, `party`, `states` | Member labels, party resolution, state codes |
-| `share`, `metrics-utils` | Social sharing URLs, metrics chart helpers |
-| `fetch-queue`, `theme` | API request concurrency, dark/light theme preference |
+| `format`, `party`, `states` | Member labels, policy consistency helpers, state codes |
+| `vote-counts` | Yes/No vote counting, bill roll-call aggregation for charts |
+| `share`, `fetch-queue`, `theme` | Social sharing URLs, API request concurrency, dark/light theme |
 
 ---
 
@@ -279,9 +309,10 @@ Before deploying:
 
 ## Operational notes
 
-- **First request after cache expiry** can take 30–60+ seconds while report cards are built.
+- **First request after cache expiry** can take 30–60+ seconds while report cards or metrics are built; stale cache is served during background refresh when available.
 - **Backend startup** verifies all 30 tracked bills against Congress.gov; mismatches prevent the server from starting.
-- **Senate scores** show `N/A` — scoring requires House roll-call data.
+- **Senate members** appear in the directory but House roll-call votes drive per-member records; Senate floor votes are not available per-member via Congress.gov today.
+- **Metrics page** aggregates bill-level roll-call statistics only — no member leaderboards or grade distributions.
 - **Board page** is live (`ENABLE_BOARD_PAGE = true`). **Donate page** remains disabled until `ENABLE_DONATE_PAGE` is enabled and a payment processor is integrated.
 
 ---
@@ -324,7 +355,7 @@ Focus on stability and launch readiness before deeper work.
 Build on the stable production foundation.
 
 - **Donor and engagement**: Stripe webhooks → Zapier/Mailchimp automation, donor portal.
-- **Advocacy tools**: Bill alerts, social sharing, analytics (GA4).
+- **Advocacy tools**: Bill alerts, analytics (GA4). *(State heat map, learn/get-involved, and share-to-platform links shipped.)*
 - **Tech**: CI/CD improvements, performance tuning, accessibility audit.
 - **Security review**: Full penetration test once production is live.
 

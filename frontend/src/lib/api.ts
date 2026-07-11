@@ -147,6 +147,7 @@ function normalizeMetricsOverview(payload: unknown): MetricsOverview {
       totalNotVotingInstances: data.kpis?.totalNotVotingInstances ?? 0,
     },
     chamberSummary: data.chamberSummary ?? [],
+    byState: data.byState ?? [],
     bills: data.bills ?? [],
   };
 }
@@ -179,4 +180,55 @@ export async function getMetrics(): Promise<MetricsOverview> {
 
 export function getMetricsExportUrl(): string {
   return `${metricsApiBase()}/api/metrics/export`;
+}
+
+export interface InvolveSignupPayload {
+  name: string;
+  email: string;
+  state?: string;
+  interest?: string;
+  message?: string;
+  consent: boolean;
+  website?: string;
+}
+
+export async function submitInvolveSignup(
+  payload: InvolveSignupPayload
+): Promise<{ ok: boolean; message: string }> {
+  const res = await fetch(`${metricsApiBase()}/api/involve`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    let detail = `Signup failed (${res.status})`;
+    try {
+      const body = (await res.json()) as { detail?: string | { msg?: string }[] };
+      if (typeof body.detail === "string") {
+        detail = body.detail;
+      } else if (Array.isArray(body.detail) && body.detail[0]?.msg) {
+        detail = body.detail[0].msg;
+      }
+    } catch {
+      /* use default */
+    }
+    throw new Error(detail);
+  }
+
+  return res.json();
+}
+
+/** Fire-and-forget page view ingest. There is no public read API for analytics. */
+export async function trackPageView(path: string, referrer = ""): Promise<void> {
+  try {
+    await fetch(`${metricsApiBase()}/api/analytics/event`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path, referrer }),
+      keepalive: true,
+    });
+  } catch {
+    /* non-blocking */
+  }
 }

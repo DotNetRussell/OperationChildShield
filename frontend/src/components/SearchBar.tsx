@@ -12,8 +12,14 @@ export function SearchBar() {
   function handleSearch() {
     const params = new URLSearchParams(searchParams.toString());
     const term = search.trim();
-    if (term) params.set("search", term);
-    else params.delete("search");
+    if (term) {
+      params.set("search", term);
+      // Search is global - drop dropdown filters so results aren't constrained.
+      params.delete("party");
+      params.delete("state");
+    } else {
+      params.delete("search");
+    }
     params.delete("offset");
 
     startTransition(() => {
@@ -30,7 +36,7 @@ export function SearchBar() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-          placeholder="Search name or state..."
+          placeholder="Name, state, or city..."
           className="w-full px-4 py-3.5 sm:px-6 sm:py-4 border-none text-base sm:text-[1.1rem] outline-none bg-surface text-foreground placeholder:text-muted/80"
         />
         <button
@@ -39,7 +45,7 @@ export function SearchBar() {
           disabled={isPending}
           className="w-full sm:w-auto shrink-0 px-6 py-3.5 sm:px-10 bg-red text-white border-none border-t sm:border-t-0 sm:border-l border-blue/20 font-bold text-base sm:text-[1.1rem] cursor-pointer hover:bg-[#991b1b] transition-colors disabled:opacity-70"
         >
-          {isPending ? "Searching…" : "Search"}
+          {isPending ? "Searching..." : "Find Them"}
         </button>
       </div>
     </div>

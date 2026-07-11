@@ -54,6 +54,23 @@ body {
   margin: 0;
 }
 
+/* Shared content width for all pages */
+.page-container {
+  width: 100%;
+  max-width: 1120px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .page-container {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
 .hero-header {
   min-height: 280px;
   padding: 0.5rem 0 1.25rem;

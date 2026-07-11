@@ -4,6 +4,7 @@ import {
   formatDisplayName,
   formatMemberSubtitle,
   formatPartyLabel,
+  formatUtcTimestamp,
   gradeCircleClass,
   partyBadgeClass,
   voteSortOrder,
@@ -24,6 +25,18 @@ const houseMember: MemberSummary = {
   imageUrl: null,
   congressUrl: "https://www.congress.gov/member/jane-doe/A000001",
 };
+
+describe("formatUtcTimestamp", () => {
+  it("formats ISO timestamps in UTC with time zone label", () => {
+    expect(formatUtcTimestamp("2026-07-08T05:53:43.000Z")).toBe(
+      "7/8/2026, 5:53:43 AM UTC"
+    );
+  });
+
+  it("returns the original string for invalid dates", () => {
+    expect(formatUtcTimestamp("not-a-date")).toBe("not-a-date");
+  });
+});
 
 const senateMember: MemberSummary = {
   ...houseMember,

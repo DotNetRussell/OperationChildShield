@@ -2,6 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { buildSharePayload, type ShareReportInput } from "@/lib/share";
+import {
+  buildEmailShareUrl,
+  buildFacebookShareUrl,
+  buildLinkedInShareUrl,
+  buildXShareUrl,
+} from "@/lib/social";
 
 interface ShareButtonProps extends ShareReportInput {
   className?: string;
@@ -74,10 +80,26 @@ export function ShareButton({
     }
   }
 
+  async function nativeShare() {
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      try {
+        await navigator.share(payload);
+        setOpen(false);
+        return;
+      } catch {
+        /* cancelled */
+      }
+    }
+    await copyToClipboard(payload.text, "Message copied!");
+  }
+
   const baseButtonClass =
     variant === "report"
       ? "inline-flex items-center justify-center gap-2 rounded-md border border-blue bg-surface px-4 py-2.5 text-sm font-bold text-blue transition-colors hover:bg-blue/5"
       : "inline-flex w-full items-center justify-center gap-2 rounded-md border border-card-border bg-surface px-4 py-3 text-sm font-bold text-blue transition-colors hover:bg-surface-muted";
+
+  const itemClass =
+    "block w-full px-4 py-2.5 text-left text-sm font-semibold text-foreground hover:bg-surface-muted border-t border-card-border first:border-t-0";
 
   return (
     <div ref={menuRef} className={`relative ${className}`}>
@@ -89,7 +111,7 @@ export function ShareButton({
         aria-haspopup="menu"
       >
         <ShareIcon />
-        {feedback ?? "Share"}
+        {feedback ?? "Share This Record"}
       </button>
 
       {open && (
@@ -100,18 +122,64 @@ export function ShareButton({
           <button
             type="button"
             role="menuitem"
-            onClick={() => copyToClipboard(payload.url, "Link copied!")}
-            className="block w-full px-4 py-2.5 text-left text-sm font-semibold text-foreground hover:bg-surface-muted"
+            onClick={() => void nativeShare()}
+            className={itemClass}
           >
-            Copy link to report
+            Share from this device...
+          </button>
+          <a
+            role="menuitem"
+            href={buildXShareUrl(payload.text, payload.url)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`${itemClass} no-underline`}
+            onClick={() => setOpen(false)}
+          >
+            Post on X
+          </a>
+          <a
+            role="menuitem"
+            href={buildFacebookShareUrl(payload.url)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`${itemClass} no-underline`}
+            onClick={() => setOpen(false)}
+          >
+            Post on Facebook
+          </a>
+          <a
+            role="menuitem"
+            href={buildLinkedInShareUrl(payload.url)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`${itemClass} no-underline`}
+            onClick={() => setOpen(false)}
+          >
+            Share on LinkedIn
+          </a>
+          <a
+            role="menuitem"
+            href={buildEmailShareUrl(payload.title, payload.text, payload.url)}
+            className={`${itemClass} no-underline`}
+            onClick={() => setOpen(false)}
+          >
+            Email this record
+          </a>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => copyToClipboard(payload.url, "Link copied!")}
+            className={itemClass}
+          >
+            Copy the link
           </button>
           <button
             type="button"
             role="menuitem"
             onClick={() => copyToClipboard(payload.text, "Message copied!")}
-            className="block w-full border-t border-card-border px-4 py-2.5 text-left text-sm font-semibold text-foreground hover:bg-surface-muted"
+            className={itemClass}
           >
-            Copy message with link
+            Copy a ready-to-send message
           </button>
         </div>
       )}

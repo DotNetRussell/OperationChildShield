@@ -35,6 +35,22 @@ export interface MetricsKpis {
   totalNotVotingInstances: number;
 }
 
+/** House roll-call aggregates for one state. */
+export interface StateMetric {
+  state: string;
+  stateCode: string;
+  membersTracked: number;
+  houseMembersTracked: number;
+  houseMembersWithRecordedVotes: number;
+  recordedVotes: number;
+  policyConsistentVotes: number;
+  policyNotConsistentVotes: number;
+  policyConsistencyRate: number | null;
+  votesParticipated: number;
+  notVotingCount: number;
+  participationRate: number | null;
+}
+
 export interface MetricsOverview {
   congress: number;
   lastUpdated: string;
@@ -42,5 +58,6 @@ export interface MetricsOverview {
   methodologyNote: string;
   kpis: MetricsKpis;
   chamberSummary: ChamberMetricsSummary[];
+  byState: StateMetric[];
   bills: BillMetricsRow[];
 }

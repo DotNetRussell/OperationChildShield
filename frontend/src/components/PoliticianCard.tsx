@@ -206,7 +206,7 @@ export function PoliticianCard({ member, loadVotes = true }: PoliticianCardProps
               >
                 <div className="flex-1 pr-2 text-sm leading-snug min-w-0">
                   {bill.bill_title.length > 48
-                    ? `${bill.bill_title.slice(0, 48)}…`
+                    ? `${bill.bill_title.slice(0, 48)}...`
                     : bill.bill_title}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -247,7 +247,7 @@ export function PoliticianCard({ member, loadVotes = true }: PoliticianCardProps
             href={`/member/${member.bioguideId}`}
             className="block w-full py-3.5 bg-red text-white border-none rounded-md font-bold text-center no-underline hover:bg-[#991b1b] transition-colors"
           >
-            VOTING RECORD →
+            See Full Record →
           </Link>
         </div>
       </div>

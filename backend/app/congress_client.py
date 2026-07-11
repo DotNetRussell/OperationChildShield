@@ -57,10 +57,52 @@ class CongressClient:
 
         return await self._fetch_and_cache(path, params, cache_key)
 
+    async def get_members_page(
+        self, congress: int, current_only: bool = True, offset: int = 0
+    ) -> dict[str, Any]:
+        params = {"currentMember": str(current_only).lower(), "offset": offset}
+        return await self._request(f"/member/congress/{congress}", params)
+
+    async def _refresh_all_members(
+        self, congress: int, current_only: bool, cache_key: str
+    ) -> list[dict]:
+        all_members: list[dict] = []
+        offset = 0
+        seen_first_ids: set[str] = set()
+
+        while True:
+            data = await self.get_members_page(congress, current_only, offset)
+            page = data.get("members", [])
+            if not page:
+                break
+
+            first_id = page[0].get("bioguideId", "")
+            if offset > 0 and first_id in seen_first_ids:
+                break
+            if first_id:
+                seen_first_ids.add(first_id)
+
+            all_members.extend(page)
+            if len(page) < self.PAGE_SIZE:
+                break
+            offset += self.PAGE_SIZE
+
+        self.cache.set(cache_key, all_members)
+        return all_members
+
     async def get_members(self, congress: int, current_only: bool = True) -> list[dict]:
-        params = {"currentMember": str(current_only).lower()}
-        data = await self._request(f"/member/congress/{congress}", params)
-        return data.get("members", [])
+        """All members for a Congress (paginated - the API returns 250 per page)."""
+        cache_key = f"all_members_v2_{congress}_{current_only}"
+        cached = self.cache.get(cache_key)
+        if cached is not None:
+            maybe_schedule_revalidation(
+                self.cache,
+                cache_key,
+                lambda: self._refresh_all_members(congress, current_only, cache_key),
+            )
+            return cached
+
+        return await self._refresh_all_members(congress, current_only, cache_key)
 
     async def get_member(self, bioguide_id: str) -> dict:
         data = await self._request(f"/member/{bioguide_id}")
