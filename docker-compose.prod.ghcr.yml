@@ -1,0 +1,55 @@
+# Production stack that pulls pre-built images from GitHub Container Registry.
+# Used by GitHub Actions deploy. Server still needs local Caddyfile + .env.
+#
+# Images (built on main after CI):
+#   ghcr.io/dotnetrussell/operationchildshield-backend:main
+#   ghcr.io/dotnetrussell/operationchildshield-frontend:main
+#
+# Override tag: IMAGE_TAG=sha-abc123 docker compose -f docker-compose.prod.ghcr.yml up -d
+
+services:
+  backend:
+    image: ghcr.io/dotnetrussell/operationchildshield-backend:${IMAGE_TAG:-main}
+    environment:
+      - CONGRESS_API_KEY=${CONGRESS_API_KEY}
+      - CONGRESS_NUMBER=${CONGRESS_NUMBER:-119}
+      - CACHE_TTL_SECONDS=${CACHE_TTL_SECONDS:-86400}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost}
+    volumes:
+      - backend-cache:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    image: ghcr.io/dotnetrussell/operationchildshield-frontend:${IMAGE_TAG:-main}
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost}
+      - API_URL=http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
+
+volumes:
+  backend-cache:
+  caddy_data:
+  caddy_config:

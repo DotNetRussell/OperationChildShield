@@ -1,0 +1,8 @@
+# HTTP-only Caddy config for IP-based access until DNS points here.
+# Replace :80 with your domain once DNS A records are ready (see Caddyfile.example).
+
+:80 {
+	encode gzip
+	reverse_proxy /api/* backend:8000
+	reverse_proxy frontend:3000
+}
