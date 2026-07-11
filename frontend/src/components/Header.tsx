@@ -3,12 +3,17 @@ import Link from "next/link";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ENABLE_BOARD_PAGE } from "@/lib/feature-flags";
 
+/** Ordered for engagement: explore data first, then act, then org/legal. */
 const NAV_LINKS = [
-  { href: "/bills", label: "Tracked Bills" },
-  { href: "/metrics", label: "Metrics" },
-  { href: "/about", label: "Policy Positions" },
-  { href: "/partners", label: "Partners" },
-  ...(ENABLE_BOARD_PAGE ? [{ href: "/board", label: "Board" }] : []),
+  { href: "/", label: "Find Lawmakers" },
+  { href: "/metrics", label: "See the Map" },
+  { href: "/the-facts", label: "The Facts" },
+  { href: "/bills", label: "The Bills" },
+  { href: "/get-involved", label: "Join Us" },
+  { href: "/learn", label: "How It Works" },
+  { href: "/about", label: "Our Policy" },
+  { href: "/partners", label: "Our Allies" },
+  ...(ENABLE_BOARD_PAGE ? [{ href: "/board", label: "Leadership" }] : []),
   { href: "/disclaimer", label: "Disclaimer" },
 ] as const;
 

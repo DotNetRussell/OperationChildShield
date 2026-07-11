@@ -99,7 +99,7 @@ export function MemberFiltersBar() {
         )}
       </div>
       {isPending && (
-        <p className="text-center text-sm text-muted mt-3 animate-pulse">Updating results…</p>
+        <p className="text-center text-sm text-muted mt-3 animate-pulse">Updating results...</p>
       )}
     </div>
   );

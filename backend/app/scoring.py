@@ -261,7 +261,7 @@ def absent_vote_record(
     congress: int,
     session: int,
 ) -> MemberVoteRecord:
-    """Member was in the House but has no roll-call entry — counts as not voting."""
+    """Member was in the House but has no roll-call entry - counts as not voting."""
     earned, possible, impact, policy_consistent = score_vote(VoteValue.NOT_VOTING, bill.stance)
     roll_call = vote_meta.get("rollCallNumber", "")
 
@@ -284,7 +284,7 @@ def absent_vote_record(
 
 
 def unscored_bill_record(bill: TrackedBill) -> MemberVoteRecord:
-    """Tracked bill with no House floor vote yet — not counted in score."""
+    """Tracked bill with no House floor vote yet - not counted in score."""
     return MemberVoteRecord(
         bill_id=bill.bill_id,
         bill_title=bill.title,

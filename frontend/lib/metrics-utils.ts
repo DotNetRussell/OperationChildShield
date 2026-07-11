@@ -102,7 +102,7 @@ export function computeFilteredView(
   const scores = houseScored.map((m) => m.scorePercent);
 
   const histogram = data.scoreDistribution.histogram.map((bin) => {
-    const [low] = bin.label.split("–").map((s) => parseInt(s, 10));
+    const [low] = bin.label.split("-").map((s) => parseInt(s, 10));
     const count = scores.filter((s) => {
       if (bin.label.includes("100")) return s >= low;
       const high = low + 10;
@@ -214,8 +214,8 @@ export function computeFilteredView(
 
   const seniorityBuckets = [
     "Freshman (1 term)",
-    "2–4 terms",
-    "5–8 terms",
+    "2-4 terms",
+    "5-8 terms",
     "9+ terms (Senior)",
   ];
   const bySeniority = seniorityBuckets

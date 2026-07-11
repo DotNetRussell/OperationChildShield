@@ -47,7 +47,7 @@ export function DonationForm() {
         <h2 className="text-xl font-bold text-blue m-0">Choose your gift</h2>
         <p className="mt-2 text-sm text-muted m-0">
           Select a suggested amount or enter your own. Online payments are not
-          connected yet — this preview shows the donation experience we are building.
+          connected yet. This preview shows the donation experience we are building.
         </p>
 
         <div className="mt-6 flex rounded-xl border-2 border-card-border p-1 bg-surface-muted">
@@ -122,7 +122,7 @@ export function DonationForm() {
           disabled
           className="mt-6 w-full py-4 rounded-xl bg-red text-white font-bold text-lg opacity-80 cursor-not-allowed"
         >
-          Donate {formatUsd(activeAmount)} — Coming Soon
+          Donate {formatUsd(activeAmount)} (Coming Soon)
         </button>
         <p className="mt-3 text-center text-xs text-muted">
           Payment processing will be added in a future release. No charges are made

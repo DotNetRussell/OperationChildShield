@@ -81,11 +81,16 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   };
 
   return (
-    <div className="max-w-[1280px] mx-auto px-4 py-8">
-      <p className="text-center text-muted text-sm mb-4 max-w-2xl mx-auto leading-relaxed">
-        A neutral public voting record on child safety legislation. Each recorded
-        floor vote is compared to Operation Child Shield&apos;s board-adopted policy
-        positions.
+    <div className="page-container py-8">
+      <p className="text-center text-muted text-sm mb-2 max-w-2xl mx-auto leading-relaxed">
+        See how every member of Congress voted on child safety bills. Each recorded
+        floor vote is checked against Operation Child Shield policy.
+      </p>
+      <p className="text-center text-muted text-xs mb-4 max-w-3xl mx-auto leading-relaxed">
+        Search the full <strong className="text-foreground">House and Senate</strong>{" "}
+        directory. House records use roll-call votes on bills we track. Senate members
+        are listed for reference when per-member floor votes are not available.
+        Eligible members who sat out a vote appear as &quot;Not Voting.&quot;
       </p>
 
       <PolicyLegend className="mb-8" />

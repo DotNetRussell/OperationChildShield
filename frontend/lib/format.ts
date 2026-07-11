@@ -30,7 +30,7 @@ export function formatMemberSubtitle(member: MemberSummary): string {
   return `${prefix} ${location}`;
 }
 
-/** @deprecated Use formatMemberSubtitle — party shown separately on cards */
+/** @deprecated Use formatMemberSubtitle - party shown separately on cards */
 export function formatMemberTitle(member: MemberSummary): string {
   return `${formatMemberSubtitle(member)} • ${formatPartyLabel(member.party)}`;
 }

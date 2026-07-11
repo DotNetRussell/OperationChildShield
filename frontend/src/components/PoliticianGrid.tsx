@@ -133,8 +133,8 @@ export function PoliticianGrid({
       {!isSearch && !activeFilterLabel && total > members.length && (
         <p className="text-center text-muted text-sm mb-6 px-2">
           Showing {members.length} of {total} members. Scroll down to load more.{" "}
-          <strong className="text-foreground">Search by name or state</strong> to find a
-          specific representative.
+          <strong className="text-foreground">Search by name or state</strong> to find
+          a specific representative.
         </p>
       )}
       {isSearch && (

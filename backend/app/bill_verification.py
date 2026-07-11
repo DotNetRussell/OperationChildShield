@@ -73,7 +73,7 @@ async def log_bill_verification(client: CongressClient) -> None:
     for result in results:
         if result["verified"]:
             logger.info(
-                "Bill verified: %s %s %s — %s",
+                "Bill verified: %s %s %s - %s",
                 result["congress"],
                 result["bill_type"],
                 result["number"],

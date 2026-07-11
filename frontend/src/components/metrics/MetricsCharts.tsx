@@ -80,7 +80,7 @@ export function MetricsCharts({ bills }: MetricsChartsProps) {
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-[10px] border border-card-border bg-surface p-5 shadow-sm">
           <h3 className="m-0 text-base font-bold text-blue">
-            All Tracked Roll Calls — Vote Mix
+            All Tracked Roll Calls: Vote Mix
           </h3>
           <p className="mt-1 text-sm text-muted">
             Combined Yes / No / Not Voting across every tracked bill with a House

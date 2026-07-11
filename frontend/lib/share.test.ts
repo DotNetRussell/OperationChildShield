@@ -41,8 +41,8 @@ describe("buildShareText", () => {
     expect(text).toContain("Michael T. McCaul (Republican)");
     expect(text).toContain("Child Protection Grade: B");
     expect(text).toContain("Protection Score: 78%");
-    expect(text).toContain("• H.R. 734 — Yes");
-    expect(text).toContain("• H.R. 5 — No");
+    expect(text).toContain("• H.R. 734 - Yes");
+    expect(text).toContain("• H.R. 5 - No");
     expect(text).toContain("2 votes scored • 5 bills tracked");
     expect(text).toContain("https://operationchildshield.org/member/M001157");
   });
@@ -53,14 +53,14 @@ describe("buildShareText", () => {
         bioguideId: "A000374",
         name: "Abraham, Ralph Lee",
         party: "Republican",
-        letterGrade: "—",
+        letterGrade: " - ",
         chamber: "House",
       },
       "https://operationchildshield.org"
     );
 
     expect(text).toContain("Ralph Lee Abraham (Republican)");
-    expect(text).toContain("Child Protection Grade: —");
+    expect(text).toContain("Child Protection Grade:  - ");
     expect(text).not.toContain("Protection Score:");
     expect(text).toContain("No floor votes on tracked child protection bills yet.");
   });

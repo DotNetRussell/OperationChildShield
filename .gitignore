@@ -63,3 +63,8 @@ Thumbs.db
 dist/
 build/
 test-results.txt
+# Local deploy secrets/metadata
+.deploy/
+
+# Windows download metadata
+*:Zone.Identifier

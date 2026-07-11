@@ -30,10 +30,10 @@ class BillFloorStatus(str, Enum):
 
 FLOOR_STATUS_LABELS: dict[BillFloorStatus, str] = {
     BillFloorStatus.HOUSE_ROLL_CALL: "House roll call vote (scored)",
-    BillFloorStatus.PASSED_HOUSE: "Passed House (voice vote — not individually scored)",
+    BillFloorStatus.PASSED_HOUSE: "Passed House (voice vote, not individually scored)",
     BillFloorStatus.PASSED_SENATE: "Passed Senate (not individually scored for House members)",
-    BillFloorStatus.PASSED_BOTH: "Passed both chambers (voice votes — not individually scored)",
-    BillFloorStatus.INTRODUCED: "Introduced — awaiting floor vote",
+    BillFloorStatus.PASSED_BOTH: "Passed both chambers (voice votes, not individually scored)",
+    BillFloorStatus.INTRODUCED: "Introduced (awaiting floor vote)",
 }
 
 
@@ -93,7 +93,7 @@ class TrackedBill:
 
 
 TRACKED_BILLS: list[TrackedBill] = [
-    # 119th Congress (2025–2027) — verified at congress.gov
+    # 119th Congress (2025-2027) - verified at congress.gov
     TrackedBill(
         congress=119,
         bill_type="HR",
@@ -184,7 +184,7 @@ TRACKED_BILLS: list[TrackedBill] = [
         stance=ProtectionStance.PROTECTION,
         description="Protects children in Social Security disability benefit determinations.",
     ),
-    # 118th Congress (2023–2025) — verified at congress.gov
+    # 118th Congress (2023-2025) - verified at congress.gov
     TrackedBill(
         congress=118,
         bill_type="HR",
@@ -257,7 +257,7 @@ TRACKED_BILLS: list[TrackedBill] = [
         stance=ProtectionStance.PROTECTION,
         description="Strengthens child protection services in Native American communities.",
     ),
-    # 117th Congress (2021–2023) — verified at congress.gov
+    # 117th Congress (2021-2023) - verified at congress.gov
     TrackedBill(
         congress=117,
         bill_type="HR",
@@ -285,7 +285,7 @@ TRACKED_BILLS: list[TrackedBill] = [
         stance=ProtectionStance.PROTECTION,
         description="Reauthorizes federal anti-trafficking programs and victim support services.",
     ),
-    # Floor-action bills (voice vote / Senate passage — tracked, not roll-call scored)
+    # Floor-action bills (voice vote / Senate passage - tracked, not roll-call scored)
     TrackedBill(
         congress=119,
         bill_type="HR",
@@ -371,7 +371,7 @@ TRACKED_BILLS: list[TrackedBill] = [
 ]
 
 BILL_FLOOR_STATUS: dict[str, BillFloorStatus] = {
-    # House roll call — these drive Protection Scores
+    # House roll call - these drive Protection Scores
     "117-hr-6552": BillFloorStatus.HOUSE_ROLL_CALL,
     "118-hr-443": BillFloorStatus.HOUSE_ROLL_CALL,
     "118-hr-663": BillFloorStatus.HOUSE_ROLL_CALL,

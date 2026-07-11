@@ -29,7 +29,7 @@ function member(overrides: Partial<MetricsMember> = {}): MetricsMember {
     notVotingCount: 0,
     participationRate: 100,
     termCount: 2,
-    seniorityBucket: "2–4 terms",
+    seniorityBucket: "2-4 terms",
     passingGrade: true,
     congressUrl: "https://www.congress.gov/member/jane-doe/A000001",
     ...overrides,

@@ -73,6 +73,34 @@ export function getStateCode(stateName: string, stateCode?: string): string {
   return STATE_NAME_TO_CODE[stateName] || stateName.slice(0, 2).toUpperCase();
 }
 
+const STATE_CODE_TO_NAME: Record<string, string> = Object.fromEntries(
+  Object.entries(STATE_NAME_TO_CODE).map(([name, code]) => [code, name])
+);
+
+export function getStateNameFromCode(code: string): string | null {
+  const upper = code.trim().toUpperCase();
+  return STATE_CODE_TO_NAME[upper] ?? null;
+}
+
+export function isValidStateCode(code: string): boolean {
+  return getStateNameFromCode(code) != null;
+}
+
+/**
+ * Approximate US map layout (row-major postal codes) for the heat map.
+ * null = empty cell for geographic spacing.
+ */
+export const US_HEATMAP_LAYOUT: (string | null)[][] = [
+  [null, null, null, null, null, null, null, null, null, null, "ME"],
+  [null, null, null, null, null, null, null, null, null, "VT", "NH"],
+  ["WA", "ID", "MT", "ND", "MN", "IL", "WI", "MI", "NY", "MA", "RI"],
+  ["OR", "NV", "WY", "SD", "IA", "IN", "OH", "PA", "NJ", "CT", null],
+  ["CA", "UT", "CO", "NE", "MO", "KY", "WV", "VA", "MD", "DE", null],
+  [null, "AZ", "NM", "KS", "AR", "TN", "NC", "SC", null, null, null],
+  [null, null, null, "OK", "LA", "MS", "AL", "GA", null, null, null],
+  ["HI", "AK", null, "TX", null, null, null, null, "FL", null, "DC"],
+];
+
 /** Local state map image served from /public/states/ */
 export function getStateMapImageUrl(stateName: string, stateCode?: string): string | null {
   const code = getStateCode(stateName, stateCode).toLowerCase();

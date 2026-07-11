@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { getStateCode, getStateMapImageUrl, US_STATE_OPTIONS } from "./states";
+import {
+  getStateCode,
+  getStateMapImageUrl,
+  getStateNameFromCode,
+  isValidStateCode,
+  US_HEATMAP_LAYOUT,
+  US_STATE_OPTIONS,
+} from "./states";
 
 describe("getStateCode", () => {
   it("prefers explicit state code", () => {
@@ -33,5 +40,25 @@ describe("US_STATE_OPTIONS", () => {
     expect(codes.has("CA")).toBe(true);
     expect(codes.has("DC")).toBe(true);
     expect(US_STATE_OPTIONS.length).toBeGreaterThanOrEqual(51);
+  });
+});
+
+describe("getStateNameFromCode / isValidStateCode", () => {
+  it("round-trips postal codes", () => {
+    expect(getStateNameFromCode("tx")).toBe("Texas");
+    expect(isValidStateCode("ME")).toBe(true);
+    expect(isValidStateCode("ZZ")).toBe(false);
+  });
+});
+
+describe("US_HEATMAP_LAYOUT", () => {
+  it("includes all 50 states and DC", () => {
+    const codes = new Set(
+      US_HEATMAP_LAYOUT.flat().filter((c): c is string => c != null)
+    );
+    expect(codes.has("CA")).toBe(true);
+    expect(codes.has("DC")).toBe(true);
+    expect(codes.has("HI")).toBe(true);
+    expect(codes.size).toBe(51);
   });
 });

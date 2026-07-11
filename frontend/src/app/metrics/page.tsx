@@ -1,13 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { MetricsCharts } from "@/components/metrics/MetricsCharts";
+import { StateHeatMap } from "@/components/metrics/StateHeatMap";
+import { StatePerformanceTable } from "@/components/metrics/StatePerformanceTable";
 import { getMetrics, getMetricsExportUrl } from "@/lib/api";
+import { formatUtcTimestamp } from "@/lib/format";
 import type { BillMetricsRow } from "@/lib/metrics-types";
 
 export const metadata: Metadata = {
-  title: "Metrics",
+  title: "See How Congress Voted",
   description:
-    "Bill-level roll-call statistics for tracked child safety legislation.",
+    "State heat map and roll-call totals for tracked child safety legislation.",
 };
 
 export const dynamic = "force-dynamic";
@@ -40,22 +43,22 @@ function BillRow({ bill }: { bill: BillMetricsRow }) {
         <p className="m-0 mt-1 text-sm text-muted leading-snug">{bill.billTitle}</p>
       </td>
       <td className="py-4 px-3 align-top text-center text-sm">
-        {hasRollCall ? bill.eligibleMembers : "—"}
+        {hasRollCall ? bill.eligibleMembers : "-"}
       </td>
       <td className="py-4 px-3 align-top text-center text-sm">
-        {hasRollCall ? bill.voteCounts.yes : "—"}
+        {hasRollCall ? bill.voteCounts.yes : "-"}
       </td>
       <td className="py-4 px-3 align-top text-center text-sm">
-        {hasRollCall ? bill.voteCounts.no : "—"}
+        {hasRollCall ? bill.voteCounts.no : "-"}
       </td>
       <td className="py-4 px-3 align-top text-center text-sm">
-        {hasRollCall ? bill.voteCounts.notVoting : "—"}
+        {hasRollCall ? bill.voteCounts.notVoting : "-"}
       </td>
       <td className="py-4 px-3 align-top text-center text-sm">
-        {hasRollCall ? bill.policyConsistentVotes : "—"}
+        {hasRollCall ? bill.policyConsistentVotes : "-"}
       </td>
       <td className="py-4 pl-3 align-top text-center text-sm">
-        {hasRollCall ? bill.policyNotConsistentVotes : "—"}
+        {hasRollCall ? bill.policyNotConsistentVotes : "-"}
       </td>
     </tr>
   );
@@ -72,15 +75,15 @@ export default async function MetricsPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
+    <div className="page-container py-8">
       <Link href="/" className="text-sm text-muted hover:text-blue">
-        ← Back to search
+        ← Back to lawmakers
       </Link>
 
-      <h1 className="text-3xl font-bold text-blue mt-4">Metrics</h1>
+      <h1 className="text-3xl font-bold text-blue mt-4">See How Congress Voted</h1>
       <p className="mt-4 text-muted leading-relaxed max-w-3xl">
-        Congress-wide statistics on tracked child safety bills, including
-        roll-call totals and policy-consistency counts.
+        State heat map and roll-call totals on tracked child safety bills.
+        Click a state to meet its members.
       </p>
 
       {error ? (
@@ -89,10 +92,14 @@ export default async function MetricsPage() {
         <>
           <p className="mt-3 text-xs text-muted">
             {data.dataSource} · Congress {data.congress} · Updated{" "}
-            {new Date(data.lastUpdated).toLocaleString()}
+            {formatUtcTimestamp(data.lastUpdated)}
           </p>
 
-          <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
+          <section className="mt-6">
+            <StateHeatMap byState={data.byState ?? []} />
+          </section>
+
+          <div className="mt-10 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
             <KpiCard label="Members Tracked" value={data.kpis.totalMembersTracked} />
             <KpiCard
               label="House w/ Recorded Votes"
@@ -149,12 +156,12 @@ export default async function MetricsPage() {
 
           <section className="mt-10">
             <div className="flex flex-wrap items-end justify-between gap-3">
-              <h2 className="m-0 text-xl font-bold text-blue">Tracked Bill Roll Calls</h2>
+              <h2 className="m-0 text-xl font-bold text-blue">Every Bill, Vote by Vote</h2>
               <a
                 href={getMetricsExportUrl()}
                 className="text-sm font-semibold text-red hover:underline"
               >
-                Download bill summary CSV →
+                Download the Data →
               </a>
             </div>
             <p className="mt-2 text-sm text-muted">
@@ -184,6 +191,8 @@ export default async function MetricsPage() {
               </table>
             </div>
           </section>
+
+          <StatePerformanceTable byState={data.byState ?? []} />
 
         </>
       ) : null}

@@ -2,21 +2,21 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Legal Disclaimer",
+  title: "Disclaimer",
   description:
-    "Legal disclaimer for Operation Child Shield — entertainment purposes, public data sources, and contact information.",
+    "Legal disclaimer for Operation Child Shield: entertainment purposes, public data sources, and contact information.",
 };
 
 const CONTACT_EMAIL = "Contact@OperationChildShield.com";
 
 export default function DisclaimerPage() {
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
+    <div className="page-container py-8">
       <Link href="/" className="text-sm text-muted hover:text-blue">
-        ← Back to search
+        ← Back to lawmakers
       </Link>
 
-      <h1 className="text-3xl font-bold text-blue mt-4">Legal Disclaimer</h1>
+      <h1 className="text-3xl font-bold text-blue mt-4">Disclaimer</h1>
 
       <section className="mt-8 space-y-6 text-muted leading-relaxed">
         <p>
@@ -84,14 +84,6 @@ export default function DisclaimerPage() {
           </a>
         </p>
       </section>
-
-      <p className="mt-8 text-sm text-muted">
-        See also our{" "}
-        <Link href="/about" className="text-blue font-medium hover:underline">
-          scoring methodology
-        </Link>
-        .
-      </p>
     </div>
   );
 }

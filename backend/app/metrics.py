@@ -1,4 +1,4 @@
-"""Aggregate legislative metrics — bill-level facts only, no member grades or rankings."""
+"""Aggregate legislative metrics - bill-level facts only, no member grades or rankings."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from app.services import (
     serialize_report_card,
 )
 
-SENIORITY_BUCKETS = ("Freshman (1 term)", "2–4 terms", "5–8 terms", "9+ terms (Senior)")
+SENIORITY_BUCKETS = ("Freshman (1 term)", "2-4 terms", "5-8 terms", "9+ terms (Senior)")
 
 HISTOGRAM_BUCKETS = [
     (0, 10),
@@ -81,8 +81,8 @@ def _is_not_voting(vote_cast: VoteValue | str) -> bool:
 
 def _histogram_label(low: int, high: int) -> str:
     if high >= 100:
-        return f"{low}–100%"
-    return f"{low}–{high - 1}%"
+        return f"{low}-100%"
+    return f"{low}-{high - 1}%"
 
 
 def _mean(values: list[float]) -> float | None:
@@ -186,6 +186,7 @@ def _build_member_record(
         "name": directory_member["name"],
         "chamber": directory_member["chamber"],
         "state": directory_member.get("state", ""),
+        "stateCode": directory_member.get("stateCode", ""),
         "keyVotes": key_votes,
         "votesTracked": votes_tracked,
         "recordedVotes": recorded_votes,
@@ -194,6 +195,134 @@ def _build_member_record(
         "votesParticipated": votes_participated,
         "notVotingCount": not_voting_count,
     }
+
+
+# Full state/territory name → postal code for heat map and state pages.
+STATE_NAME_TO_CODE: dict[str, str] = {
+    "Alabama": "AL",
+    "Alaska": "AK",
+    "Arizona": "AZ",
+    "Arkansas": "AR",
+    "California": "CA",
+    "Colorado": "CO",
+    "Connecticut": "CT",
+    "Delaware": "DE",
+    "Florida": "FL",
+    "Georgia": "GA",
+    "Hawaii": "HI",
+    "Idaho": "ID",
+    "Illinois": "IL",
+    "Indiana": "IN",
+    "Iowa": "IA",
+    "Kansas": "KS",
+    "Kentucky": "KY",
+    "Louisiana": "LA",
+    "Maine": "ME",
+    "Maryland": "MD",
+    "Massachusetts": "MA",
+    "Michigan": "MI",
+    "Minnesota": "MN",
+    "Mississippi": "MS",
+    "Missouri": "MO",
+    "Montana": "MT",
+    "Nebraska": "NE",
+    "Nevada": "NV",
+    "New Hampshire": "NH",
+    "New Jersey": "NJ",
+    "New Mexico": "NM",
+    "New York": "NY",
+    "North Carolina": "NC",
+    "North Dakota": "ND",
+    "Ohio": "OH",
+    "Oklahoma": "OK",
+    "Oregon": "OR",
+    "Pennsylvania": "PA",
+    "Rhode Island": "RI",
+    "South Carolina": "SC",
+    "South Dakota": "SD",
+    "Tennessee": "TN",
+    "Texas": "TX",
+    "Utah": "UT",
+    "Vermont": "VT",
+    "Virginia": "VA",
+    "Washington": "WA",
+    "West Virginia": "WV",
+    "Wisconsin": "WI",
+    "Wyoming": "WY",
+    "District of Columbia": "DC",
+    "Puerto Rico": "PR",
+    "Guam": "GU",
+    "Virgin Islands": "VI",
+    "Northern Mariana Islands": "MP",
+    "American Samoa": "AS",
+}
+
+
+def resolve_state_code(state_name: str, state_code: str | None = None) -> str:
+    if state_code and len(str(state_code).strip()) == 2:
+        return str(state_code).strip().upper()
+    name = (state_name or "").strip()
+    if name in STATE_NAME_TO_CODE:
+        return STATE_NAME_TO_CODE[name]
+    if len(name) == 2:
+        return name.upper()
+    return name[:2].upper() if name else ""
+
+
+def _state_summaries(members: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Aggregate House roll-call policy consistency by state (no rankings/grades)."""
+    by_state: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for member in members:
+        state = (member.get("state") or "").strip() or "Unknown"
+        by_state[state].append(member)
+
+    rows: list[dict[str, Any]] = []
+    for state, group in by_state.items():
+        house = [m for m in group if m.get("chamber") == "House"]
+        policy_consistent = sum(int(m.get("policyConsistentVotes", 0)) for m in house)
+        policy_not_consistent = sum(
+            int(m.get("policyNotConsistentVotes", 0)) for m in house
+        )
+        recorded = policy_consistent + policy_not_consistent
+        participated = sum(int(m.get("votesParticipated", 0)) for m in house)
+        not_voting = sum(int(m.get("notVotingCount", 0)) for m in house)
+        participation_denom = participated + not_voting
+
+        state_code = ""
+        for m in group:
+            state_code = resolve_state_code(state, m.get("stateCode"))
+            if state_code:
+                break
+        if not state_code:
+            state_code = resolve_state_code(state)
+
+        rows.append(
+            {
+                "state": state,
+                "stateCode": state_code,
+                "membersTracked": len(group),
+                "houseMembersTracked": len(house),
+                "houseMembersWithRecordedVotes": sum(
+                    1 for m in house if int(m.get("recordedVotes", 0)) > 0
+                ),
+                "recordedVotes": recorded,
+                "policyConsistentVotes": policy_consistent,
+                "policyNotConsistentVotes": policy_not_consistent,
+                "policyConsistencyRate": (
+                    round((policy_consistent / recorded) * 100, 1) if recorded else None
+                ),
+                "votesParticipated": participated,
+                "notVotingCount": not_voting,
+                "participationRate": (
+                    round((participated / participation_denom) * 100, 1)
+                    if participation_denom
+                    else None
+                ),
+            }
+        )
+
+    rows.sort(key=lambda row: row["state"])
+    return rows
 
 
 def _bill_summaries(members: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -306,10 +435,12 @@ def build_metrics_payload(members: list[dict[str, Any]], congress: int) -> dict[
         "dataSource": "Congress.gov API",
         "methodologyNote": (
             "Roll-call statistics on tracked child safety legislation, "
-            "sourced from Congress.gov."
+            "sourced from Congress.gov. State figures are House recorded "
+            "votes aggregated by state."
         ),
         "kpis": _compute_kpis(members, bills_tracked, bills_with_roll_calls),
         "chamberSummary": _chamber_summary(members),
+        "byState": _state_summaries(members),
         "bills": bills,
     }
 
@@ -350,7 +481,7 @@ async def build_metrics_dashboard(
     client: CongressClient,
     congress: int,
 ) -> dict[str, Any]:
-    cache_key = f"metrics_dashboard_v2_{congress}"
+    cache_key = f"metrics_dashboard_v3_{congress}"
     cached = client.cache.get(cache_key)
     if cached is not None:
         maybe_schedule_revalidation(

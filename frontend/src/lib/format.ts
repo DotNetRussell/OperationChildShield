@@ -30,7 +30,7 @@ export function formatMemberSubtitle(member: MemberSummary): string {
   return `${prefix} ${location}`;
 }
 
-/** @deprecated Use formatMemberSubtitle — party shown separately on cards */
+/** @deprecated Use formatMemberSubtitle - party shown separately on cards */
 export function formatMemberTitle(member: MemberSummary): string {
   return `${formatMemberSubtitle(member)} • ${formatPartyLabel(member.party)}`;
 }
@@ -138,4 +138,22 @@ export function voteSortOrder(vote: string): number {
   if (v === "unknown") return 2;
   if (v === "aye" || v === "yea" || v === "yes") return 1;
   return 0;
+}
+
+/** Format an ISO-8601 UTC timestamp with an explicit UTC time zone label. */
+export function formatUtcTimestamp(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+
+  return date.toLocaleString("en-US", {
+    timeZone: "UTC",
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+    timeZoneName: "short",
+  });
 }

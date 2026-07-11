@@ -7,7 +7,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.bill_verification import log_bill_verification
 from app.congress_client import CongressClient
 from app.config import settings
-from app.routes import health, members, metrics
+from app.analytics_store import init_analytics_db
+from app.routes import analytics, health, involve, members, metrics
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +16,10 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.congress_client = CongressClient()
+    try:
+        init_analytics_db()
+    except Exception:
+        logger.exception("Analytics database init failed (non-fatal)")
     try:
         await log_bill_verification(app.state.congress_client)
     except Exception:
@@ -42,3 +47,5 @@ app.add_middleware(
 app.include_router(health.router, prefix="/api")
 app.include_router(members.router, prefix="/api")
 app.include_router(metrics.router, prefix="/api")
+app.include_router(involve.router, prefix="/api")
+app.include_router(analytics.router, prefix="/api")
