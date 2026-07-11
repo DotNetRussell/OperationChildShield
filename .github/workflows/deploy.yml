@@ -60,6 +60,8 @@ jobs:
     name: Build and push images
     needs: test
     runs-on: ubuntu-latest
+    # Environment secrets (prod) are only available when the job declares this.
+    environment: prod
     outputs:
       image_tag: ${{ steps.meta.outputs.tag }}
     steps:
@@ -113,6 +115,8 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
+    # Must match the Environment name under Settings -> Environments (secrets live there).
+    environment: prod
     steps:
       - uses: actions/checkout@v4
 
@@ -142,9 +146,9 @@ jobs:
             printf '%s\n' "$DEPLOY_SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
           else
             echo "::error::Neither DEPLOY_SSH_KEY_B64 nor DEPLOY_SSH_KEY is available to this workflow."
-            echo "Add a Repository secret (not Environment secret, not Variable):"
-            echo "  DEPLOY_SSH_KEY_B64 = output of: base64 -w0 ~/.ssh/ocs_prod_deploy"
-            echo "Or ensure DEPLOY_SSH_KEY is under Settings → Secrets and variables → Actions → Repository secrets"
+            echo "This job uses environment: prod. Secrets must be Environment secrets for prod."
+            echo "  Settings -> Environments -> prod -> Environment secrets"
+            echo "  DEPLOY_SSH_KEY (PEM) or DEPLOY_SSH_KEY_B64 (base64 -w0 of the private key)"
             echo "Then re-run the workflow (old runs do not pick up new secrets mid-flight)."
             exit 1
           fi
@@ -203,7 +207,7 @@ jobs:
           set -euo pipefail
           BASE="${PUBLIC_SITE_URL:-https://operationchildshield.org}"
           for i in 1 2 3 4 5 6 7 8 9 10; do
-            if curl -fsS "${BASE}/api/health" | grep -q '"status"'; then
+            if curl -fsS "${BASE}/api/health" | grep -q '\"status\"'; then
               echo "Health OK at ${BASE}/api/health"
               exit 0
             fi
