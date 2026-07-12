@@ -39,6 +39,14 @@ operationchildshield.org, www.operationchildshield.org {
 		-X-Powered-By
 	}
 
+	# Optional: serve hero flag from host bind-mount if not yet in the frontend image.
+	# Requires compose volume: ./static-override:/srv/static:ro
+	# and file: static-override/images/american_flag.jpg
+	handle /images/american_flag.jpg {
+		root * /srv/static
+		file_server
+	}
+
 	# Overwrite client-supplied forwarding headers so backends see the real peer.
 	# Delete then set X-Forwarded-For so client-spoofed leftmost hops cannot stick.
 	reverse_proxy /api/* backend:8000 {

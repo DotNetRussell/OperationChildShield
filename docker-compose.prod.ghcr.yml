@@ -46,6 +46,9 @@ services:
       - "443:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Optional fallback for /images/american_flag.jpg (see Caddyfile.example).
+      # Create on the host: mkdir -p static-override/images && cp flag.jpg static-override/images/american_flag.jpg
+      - ./static-override:/srv/static:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
