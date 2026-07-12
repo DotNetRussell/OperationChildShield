@@ -144,9 +144,10 @@ export function PoliticianGrid({
             : `Showing ${members.length} of ${total} matches${activeFilterLabel ? ` (${activeFilterLabel})` : ""}.`}
         </p>
       )}
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] items-stretch gap-6">
+      {/* min(100%, 280px) prevents horizontal overflow / card overlap on narrow phones */}
+      <div className="grid w-full min-w-0 grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] items-stretch gap-4 sm:gap-6">
         {members.map((member) => (
-          <div key={member.bioguideId} className="flex h-full min-h-0">
+          <div key={member.bioguideId} className="flex h-full min-h-0 min-w-0">
             <PoliticianCard member={member} />
           </div>
         ))}

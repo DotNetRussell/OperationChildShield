@@ -70,3 +70,22 @@ def test_matches_child_protection_keywords():
 
     assert matches_child_protection_keywords("Kids Online Safety Act")
     assert matches_child_protection_keywords("Unrelated Infrastructure Bill") is False
+
+
+def test_social_security_bill_is_victim_support_not_csa():
+    """SSA child protection is welfare/admin protections, not CSA topic clustering."""
+    from app.bills import BillCategory
+
+    bill = get_bill_by_id("119-hr-5348")
+    assert bill is not None
+    assert bill.category == BillCategory.VICTIM_SUPPORT
+    assert bill.category.value == "Victim Support & Justice"
+
+
+def test_predator_bills_use_predator_accountability_label():
+    from app.bills import BillCategory
+
+    bill = get_bill_by_id("119-hr-134")
+    assert bill is not None
+    assert bill.category == BillCategory.CHILD_SEXUAL_ABUSE
+    assert bill.category.value == "Predator Accountability"

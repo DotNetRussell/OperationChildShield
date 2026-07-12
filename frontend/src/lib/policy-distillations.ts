@@ -160,7 +160,7 @@ export const POLICY_DISTILLATIONS: PolicyDistillation[] = [
   {
     id: "sexual-predators",
     title: "Sexual predator accountability & registration tools",
-    category: "Child Sexual Abuse / Sex Offender Registration",
+    category: "Predator Accountability / Sex Offender Registration",
     overviewUrl: billUrl(119, "house", 134),
     scope:
       "Bills that adjust penalties, accountability mechanisms, or tools aimed at offenders who sexually exploit children.",
@@ -239,7 +239,7 @@ export const POLICY_DISTILLATIONS: PolicyDistillation[] = [
   {
     id: "ssa-child-protection",
     title: "Social Security Child Protection Act",
-    category: "Child Sexual Abuse",
+    category: "Victim Support & Justice",
     overviewUrl: billUrl(119, "house", 5348),
     scope:
       "Provisions concerning children in Social Security disability benefit determinations.",
