@@ -1,4 +1,5 @@
-FROM node:26-alpine AS builder
+# Pin to Node 22 LTS. Node 26 is too new for reliable Next.js production images.
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
@@ -11,7 +12,7 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM node:26-alpine AS runner
+FROM node:22-alpine AS runner
 
 WORKDIR /app
 
