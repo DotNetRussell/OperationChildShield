@@ -6,8 +6,10 @@ WORKDIR /app
 ARG NEXT_PUBLIC_API_URL=http://localhost:8000
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
-COPY package*.json ./
-RUN npm ci
+COPY package.json package-lock.json ./
+# Prefer npm ci when lock matches package.json. Fall back to npm install when
+# Dependabot (or a partial pin) leaves them out of sync.
+RUN npm ci || npm install
 
 COPY . .
 RUN npm run build
