@@ -11,6 +11,10 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    # TypeScript 6+/7 breaks Next.js 16 peer/tooling range (<6.1).
+    ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
@@ -22,8 +26,16 @@ updates:
     directory: /backend
     schedule:
       interval: monthly
+    # Avoid major Python jumps that break pip wheels (e.g. 3.12 → 3.14).
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: docker
     directory: /frontend
     schedule:
       interval: monthly
+    # Avoid major Node jumps (e.g. 20/22 LTS → 26) until Next.js images are ready.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]

@@ -1,17 +1,20 @@
-FROM node:26-alpine AS builder
+# Pin to Node 22 LTS. Node 26 is too new for reliable Next.js production images.
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
 ARG NEXT_PUBLIC_API_URL=http://localhost:8000
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
-COPY package*.json ./
-RUN npm ci
+COPY package.json package-lock.json ./
+# Prefer npm ci when lock matches package.json. Fall back to npm install when
+# Dependabot (or a partial pin) leaves them out of sync.
+RUN npm ci || npm install
 
 COPY . .
 RUN npm run build
 
-FROM node:26-alpine AS runner
+FROM node:22-alpine AS runner
 
 WORKDIR /app
 
