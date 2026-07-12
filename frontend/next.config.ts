@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  // Prefer Caddy for full security headers in prod; hide framework fingerprint here too.
+  poweredByHeader: false,
   async redirects() {
     return [
       { source: "/stats", destination: "/metrics", permanent: true },
