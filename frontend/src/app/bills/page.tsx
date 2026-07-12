@@ -4,6 +4,25 @@ import type { TrackedBill } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
+/** Keep topic sections stable; matches backend CATEGORY_DISPLAY_ORDER. */
+const CATEGORY_ORDER = [
+  "Online Safety",
+  "Victim Support & Justice",
+  "Predator Accountability",
+  "Sex Offender Registration",
+  "Exploitation & Trafficking",
+] as const;
+
+function orderedCategories(categories: string[]): string[] {
+  const rank = new Map(CATEGORY_ORDER.map((name, index) => [name, index]));
+  return [...categories].sort((a, b) => {
+    const aRank = rank.get(a as (typeof CATEGORY_ORDER)[number]) ?? 999;
+    const bRank = rank.get(b as (typeof CATEGORY_ORDER)[number]) ?? 999;
+    if (aRank !== bRank) return aRank - bRank;
+    return a.localeCompare(b);
+  });
+}
+
 const STATUS_SECTIONS: {
   key: string;
   title: string;
@@ -103,7 +122,9 @@ export default async function BillsPage() {
         const sectionBills = bills.filter(section.match);
         if (sectionBills.length === 0) return null;
 
-        const categories = [...new Set(sectionBills.map((b) => b.category))];
+        const categories = orderedCategories([
+          ...new Set(sectionBills.map((b) => b.category)),
+        ]);
 
         return (
           <section key={section.key} className="mt-10">

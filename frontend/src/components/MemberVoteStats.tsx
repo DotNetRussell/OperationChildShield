@@ -14,8 +14,8 @@ export function MemberVoteStats({ summary, compact = false }: MemberVoteStatsPro
     <div
       className={
         compact
-          ? "mb-3 grid grid-cols-3 gap-2"
-          : "mt-6 grid grid-cols-3 gap-4 text-center"
+          ? "mb-3 grid w-full min-w-0 grid-cols-3 gap-1.5 sm:gap-2"
+          : "mt-6 grid w-full min-w-0 grid-cols-3 gap-2 sm:gap-4 text-center"
       }
       aria-label="Voting record summary"
     >

@@ -5,11 +5,22 @@ from enum import Enum
 
 
 class BillCategory(str, Enum):
-    CHILD_SEXUAL_ABUSE = "Child Sexual Abuse"
-    EXPLOITATION = "Exploitation & Trafficking"
+    # Display labels shown on /bills. Order on the page is CATEGORY_DISPLAY_ORDER.
     ONLINE_SAFETY = "Online Safety"
+    CHILD_SEXUAL_ABUSE = "Predator Accountability"
+    EXPLOITATION = "Exploitation & Trafficking"
     SEX_OFFENDER = "Sex Offender Registration"
     VICTIM_SUPPORT = "Victim Support & Justice"
+
+
+# Stable section order on the bills page (Online Safety first; Exploitation last).
+CATEGORY_DISPLAY_ORDER: list[str] = [
+    BillCategory.ONLINE_SAFETY.value,
+    BillCategory.VICTIM_SUPPORT.value,
+    BillCategory.CHILD_SEXUAL_ABUSE.value,
+    BillCategory.SEX_OFFENDER.value,
+    BillCategory.EXPLOITATION.value,
+]
 
 
 class ProtectionStance(str, Enum):
@@ -180,7 +191,7 @@ TRACKED_BILLS: list[TrackedBill] = [
         bill_type="HR",
         number=5348,
         title="Social Security Child Protection Act of 2025",
-        category=BillCategory.CHILD_SEXUAL_ABUSE,
+        category=BillCategory.VICTIM_SUPPORT,
         stance=ProtectionStance.PROTECTION,
         description="Protects children in Social Security disability benefit determinations.",
     ),
@@ -253,7 +264,7 @@ TRACKED_BILLS: list[TrackedBill] = [
         bill_type="HR",
         number=663,
         title="Native American Child Protection Act",
-        category=BillCategory.CHILD_SEXUAL_ABUSE,
+        category=BillCategory.VICTIM_SUPPORT,
         stance=ProtectionStance.PROTECTION,
         description="Strengthens child protection services in Native American communities.",
     ),
@@ -364,7 +375,7 @@ TRACKED_BILLS: list[TrackedBill] = [
         bill_type="HR",
         number=7726,
         title="Stop Child Care Scams Act of 2026",
-        category=BillCategory.EXPLOITATION,
+        category=BillCategory.VICTIM_SUPPORT,
         stance=ProtectionStance.PROTECTION,
         description="Cracks down on fraud schemes targeting child care assistance programs.",
     ),

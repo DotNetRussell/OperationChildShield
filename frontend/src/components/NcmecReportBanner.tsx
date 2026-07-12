@@ -71,30 +71,37 @@ export function NcmecReportBanner({
 
   return (
     <div
-      className={`bg-red text-white text-center text-sm px-4 py-2.5 ${className}`}
+      className={`bg-red text-white text-center text-sm px-3 py-2.5 sm:px-4 ${className}`}
       role="region"
-      aria-label="NCMEC reporting quick link"
+      aria-label="Report child exploitation"
     >
-      <span className="font-semibold">See something? Report it.</span>{" "}
-      <a
-        href={NCMEC.reportExploitationUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="underline font-bold hover:opacity-90"
-      >
-        Open CyberTipline
-      </a>
-      <span className="opacity-80"> · </span>
-      <a
-        href={`tel:${NCMEC.hotlineTel}`}
-        className="underline font-bold hover:opacity-90"
-      >
-        {NCMEC.hotlineDisplay}
-      </a>
-      <span className="opacity-80 hidden sm:inline">
-        {" "}
-        (National Center for Missing &amp; Exploited Children)
-      </span>
+      <p className="m-0 flex flex-col items-center gap-1 sm:inline sm:gap-0">
+        <span className="font-semibold">Report child exploitation</span>
+        <span className="hidden sm:inline">{" · "}</span>
+        <span className="inline-flex flex-wrap items-center justify-center gap-x-1.5 gap-y-0.5">
+          <a
+            href={NCMEC.reportExploitationUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline font-bold hover:opacity-90"
+          >
+            Open CyberTipline
+          </a>
+          <span className="opacity-80" aria-hidden>
+            ·
+          </span>
+          <a
+            href={`tel:${NCMEC.hotlineTel}`}
+            className="underline font-bold hover:opacity-90"
+          >
+            {NCMEC.hotlineDisplay}
+          </a>
+          <span className="opacity-80 hidden sm:inline">
+            {" "}
+            (National Center for Missing &amp; Exploited Children)
+          </span>
+        </span>
+      </p>
     </div>
   );
 }

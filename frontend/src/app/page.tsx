@@ -81,12 +81,12 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   };
 
   return (
-    <div className="page-container py-8">
-      <p className="text-center text-muted text-sm mb-2 max-w-2xl mx-auto leading-relaxed">
+    <div className="page-container py-8 min-w-0">
+      <p className="text-center text-muted text-sm mb-2 max-w-2xl mx-auto leading-relaxed px-1">
         See how every member of Congress voted on child safety bills. Each recorded
         floor vote is checked against Operation Child Shield policy.
       </p>
-      <p className="text-center text-muted text-xs mb-4 max-w-3xl mx-auto leading-relaxed">
+      <p className="text-center text-muted text-xs mb-4 max-w-3xl mx-auto leading-relaxed px-1">
         Search the full <strong className="text-foreground">House and Senate</strong>{" "}
         directory. House records use roll-call votes on bills we track. Senate members
         are listed for reference when per-member floor votes are not available.
@@ -109,7 +109,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
       <Suspense
         fallback={
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
+          <div className="grid w-full min-w-0 grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] gap-4 sm:gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="h-[340px] bg-surface rounded-[10px] animate-pulse" />
             ))}

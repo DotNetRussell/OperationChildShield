@@ -52,6 +52,7 @@ body {
   color: var(--foreground);
   font-family: var(--font-inter), system-ui, sans-serif;
   margin: 0;
+  overflow-x: clip;
 }
 
 /* Shared content width for all pages */
@@ -60,8 +61,10 @@ body {
   max-width: 1120px;
   margin-left: auto;
   margin-right: auto;
-  padding-left: 1.5rem;
-  padding-right: 1.5rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 @media (min-width: 640px) {

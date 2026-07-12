@@ -119,7 +119,7 @@ export function PoliticianCard({ member, loadVotes = true }: PoliticianCardProps
   return (
     <div
       ref={cardRef}
-      className="flex h-full w-full flex-col overflow-visible rounded-[10px] bg-surface shadow-[0_6px_12px_-2px_rgb(0_0_0_/_0.1)] transition-all duration-[0.25s] border border-card-border hover:-translate-y-1.5 hover:shadow-[0_20px_25px_-5px_rgb(0_0_0_/_0.15)]"
+      className="flex h-full w-full min-w-0 flex-col overflow-x-clip rounded-[10px] bg-surface shadow-[0_6px_12px_-2px_rgb(0_0_0_/_0.1)] transition-all duration-[0.25s] border border-card-border hover:-translate-y-1.5 hover:shadow-[0_20px_25px_-5px_rgb(0_0_0_/_0.15)]"
     >
       <div className="overflow-hidden rounded-t-[10px] bg-gradient-to-r from-blue to-blue-light p-4 px-5 text-white">
         <div className="flex items-start gap-3">
@@ -202,14 +202,14 @@ export function PoliticianCard({ member, loadVotes = true }: PoliticianCardProps
             return (
               <div
                 key={bill.bill_id}
-                className="py-2.5 px-3.5 bg-surface-muted mb-2 rounded-md flex justify-between items-center gap-2 border-l-4 border-red"
+                className="py-2.5 px-3 bg-surface-muted mb-2 rounded-md flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 border-l-4 border-red min-w-0"
               >
-                <div className="flex-1 pr-2 text-sm leading-snug min-w-0">
+                <div className="flex-1 text-sm leading-snug min-w-0 break-words">
                   {bill.bill_title.length > 48
                     ? `${bill.bill_title.slice(0, 48)}...`
                     : bill.bill_title}
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
                   <div
                     className={`font-bold px-2.5 py-0.5 rounded-full text-[0.8rem] whitespace-nowrap ${vote.className}`}
                   >
