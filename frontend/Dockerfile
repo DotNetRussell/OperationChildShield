@@ -12,10 +12,13 @@ COPY package.json package-lock.json ./
 RUN npm ci || npm install
 
 COPY . .
-# Hero flag is stored as base64 text in git (binary uploads are awkward via CI).
+# Hero flag is stored as base64 text in git (split parts for easier commits).
 # Decode before `next build` so the file is part of the public/ standalone output.
 RUN if [ -f public/images/american_flag.jpg.b64 ]; then \
       base64 -d public/images/american_flag.jpg.b64 > public/images/american_flag.jpg; \
+    elif [ -f public/images/american_flag.jpg.b64.part1 ]; then \
+      cat public/images/american_flag.jpg.b64.part1 public/images/american_flag.jpg.b64.part2 \
+        | base64 -d > public/images/american_flag.jpg; \
     fi
 RUN npm run build
 
