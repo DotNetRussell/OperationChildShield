@@ -2,6 +2,7 @@
 # Replace :80 with your domain once DNS A records are ready (see Caddyfile.example).
 #
 # HSTS is intentionally omitted on plain HTTP.
+# CSP is set by the Next.js proxy (frontend/src/proxy.ts) with nonces.
 
 :80 {
 	encode gzip
@@ -11,7 +12,9 @@
 		X-Content-Type-Options "nosniff"
 		Referrer-Policy "strict-origin-when-cross-origin"
 		Permissions-Policy "camera=(), microphone=(), geolocation=()"
-		Content-Security-Policy "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; img-src 'self' data: blob: https://www.congress.gov; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'"
+		Cross-Origin-Opener-Policy "same-origin"
+		Cross-Origin-Resource-Policy "same-origin"
+		Cross-Origin-Embedder-Policy "credentialless"
 		-Server
 		-X-Powered-By
 	}

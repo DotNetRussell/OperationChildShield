@@ -2,10 +2,12 @@
 #
 # Security headers below address common baseline scan failures:
 #   Strict-Transport-Security  — HTTPS-only (HSTS)
-#   Content-Security-Policy    — XSS / injection hardening
 #   X-Frame-Options            — clickjacking protection
-# CSP is intentionally practical for Next.js (inline theme bootstrap + styles).
-# Tighten script-src (nonces/hashes) later if you outgrow 'unsafe-inline'.
+#   COOP / CORP / COEP         — cross-origin isolation (defense-in-depth)
+#
+# Content-Security-Policy is set by the Next.js proxy (frontend/src/proxy.ts)
+# with per-request nonces — do NOT re-declare CSP here or scanners / browsers
+# will see a second policy that still allows unsafe-inline and breaks nonces.
 
 operationchildshield.org, www.operationchildshield.org {
 	encode gzip
@@ -14,7 +16,7 @@ operationchildshield.org, www.operationchildshield.org {
 		# Force HTTPS for 1 year on this host and subdomains
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 
-		# Clickjacking: deny framing (also covered by CSP frame-ancestors)
+		# Clickjacking: deny framing (also covered by Next CSP frame-ancestors)
 		X-Frame-Options "DENY"
 
 		# MIME sniffing protection
@@ -26,8 +28,11 @@ operationchildshield.org, www.operationchildshield.org {
 		# Disable unused powerful browser features
 		Permissions-Policy "camera=(), microphone=(), geolocation=()"
 
-		# Baseline CSP for Next.js App Router + congress.gov member photos
-		Content-Security-Policy "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; img-src 'self' data: blob: https://www.congress.gov; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' https://operationchildshield.org https://www.operationchildshield.org; upgrade-insecure-requests"
+		# Cross-origin isolation (defense-in-depth)
+		# COEP credentialless allows third-party images (e.g. congress.gov) without CORP
+		Cross-Origin-Opener-Policy "same-origin"
+		Cross-Origin-Resource-Policy "same-origin"
+		Cross-Origin-Embedder-Policy "credentialless"
 
 		# Reduce server fingerprinting (Next.js / uvicorn / Caddy defaults)
 		-Server
