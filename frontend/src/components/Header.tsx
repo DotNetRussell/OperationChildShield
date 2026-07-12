@@ -61,7 +61,7 @@ export function Header() {
             <Link
               key={href}
               href={href}
-              className="inline-flex items-center justify-center min-w-[7.5rem] px-4 py-2 rounded-full text-sm font-semibold text-white bg-white/10 border border-white/25 backdrop-blur-sm hover:bg-white/20 hover:border-white/40 transition-colors no-underline"
+              className="inline-flex h-10 w-[10.5rem] shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/10 px-2 text-center text-sm font-semibold leading-tight text-white no-underline backdrop-blur-sm transition-colors hover:border-white/40 hover:bg-white/20"
             >
               {label}
             </Link>
