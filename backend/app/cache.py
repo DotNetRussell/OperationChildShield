@@ -1,4 +1,6 @@
+import hashlib
 import json
+import os
 import time
 from pathlib import Path
 from typing import Any
@@ -13,7 +15,18 @@ class FileCache:
         self.ttl = ttl or settings.cache_ttl_seconds
 
     def _path(self, key: str) -> Path:
-        safe = key.replace("/", "_").replace(":", "_")
+        # Flatten path separators and neutralize traversal / special segments.
+        safe = (
+            key.replace("/", "_")
+            .replace("\\", "_")
+            .replace(":", "_")
+            .replace("..", "_")
+        )
+        safe = "".join(c if c.isalnum() or c in "._-?={} ," else "_" for c in safe)
+        if len(safe) > 200:
+            # Keep filenames bounded while remaining unique enough for our keys.
+            digest = hashlib.sha256(key.encode()).hexdigest()[:16]
+            safe = f"{safe[:160]}_{digest}"
         return self.cache_dir / f"{safe}.json"
 
     def _read_entry(self, key: str) -> dict[str, Any] | None:
@@ -48,3 +61,7 @@ class FileCache:
     def set(self, key: str, payload: Any) -> None:
         path = self._path(key)
         path.write_text(json.dumps({"_cached_at": time.time(), "payload": payload}))
+        try:
+            os.chmod(path, 0o600)
+        except OSError:
+            pass

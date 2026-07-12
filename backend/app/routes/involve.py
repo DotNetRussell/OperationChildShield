@@ -4,25 +4,24 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
-import time
 from datetime import datetime, timezone
 from pathlib import Path
-from threading import Lock
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field, field_validator
 
 from app.config import settings
+from app.security import client_ip, rate_limit
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
-_rate_lock = Lock()
-_rate_hits: dict[str, list[float]] = {}
-_RATE_WINDOW_SECONDS = 3600
-_RATE_MAX = 8
+
+# Cap signup file growth (bytes) to resist disk-fill abuse.
+_MAX_SIGNUP_FILE_BYTES = 5 * 1024 * 1024  # 5 MiB
 
 
 class InvolveSignupRequest(BaseModel):
@@ -48,39 +47,28 @@ class InvolveSignupRequest(BaseModel):
         return value.lower()
 
 
-def _client_ip(request: Request) -> str:
-    forwarded = request.headers.get("x-forwarded-for", "")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    if request.client:
-        return request.client.host
-    return "unknown"
-
-
-def _check_rate_limit(ip: str) -> None:
-    now = time.time()
-    with _rate_lock:
-        hits = [t for t in _rate_hits.get(ip, []) if now - t < _RATE_WINDOW_SECONDS]
-        if len(hits) >= _RATE_MAX:
-            raise HTTPException(
-                status_code=429,
-                detail="Too many signup attempts. Please try again later.",
-            )
-        hits.append(now)
-        _rate_hits[ip] = hits
-
-
 def _signup_path() -> Path:
     base = Path(settings.cache_dir)
     base.mkdir(parents=True, exist_ok=True)
     return base / "involve_signups.jsonl"
 
 
+def _ensure_private_file(path: Path) -> None:
+    """Create or tighten permissions so signup PII is not world-readable."""
+    if not path.exists():
+        path.touch(mode=0o600)
+    else:
+        try:
+            os.chmod(path, 0o600)
+        except OSError:
+            logger.warning("Could not chmod signup file to 0600")
+
+
 @router.post("/involve")
 async def submit_involve_signup(body: InvolveSignupRequest, request: Request):
     # Silent success for honeypot traps so bots don't learn the field.
     if body.website:
-        logger.info("Involve honeypot triggered from %s", _client_ip(request))
+        logger.info("Involve honeypot triggered from %s", client_ip(request))
         return {"ok": True, "message": "Thank you for signing up."}
 
     if not body.consent:
@@ -89,7 +77,13 @@ async def submit_involve_signup(body: InvolveSignupRequest, request: Request):
             detail="Consent is required to submit this form.",
         )
 
-    _check_rate_limit(_client_ip(request))
+    rate_limit(
+        client_ip(request),
+        bucket="involve",
+        max_hits=8,
+        window_seconds=3600.0,
+        detail="Too many signup attempts. Please try again later.",
+    )
 
     allowed_interests = {
         "",
@@ -115,8 +109,21 @@ async def submit_involve_signup(body: InvolveSignupRequest, request: Request):
 
     path = _signup_path()
     try:
+        if path.exists() and path.stat().st_size >= _MAX_SIGNUP_FILE_BYTES:
+            logger.error("Involve signup file at size cap (%s bytes)", _MAX_SIGNUP_FILE_BYTES)
+            raise HTTPException(
+                status_code=503,
+                detail="Unable to save signup right now. Please email Contact@OperationChildShield.com.",
+            )
+        _ensure_private_file(path)
         with path.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(record, ensure_ascii=False) + "\n")
+        try:
+            os.chmod(path, 0o600)
+        except OSError:
+            pass
+    except HTTPException:
+        raise
     except OSError:
         logger.exception("Failed to persist involve signup")
         raise HTTPException(

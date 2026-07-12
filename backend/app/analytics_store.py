@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+import os
 import sqlite3
 import threading
 from datetime import datetime, timezone
@@ -9,8 +11,14 @@ from pathlib import Path
 
 from app.config import settings
 
+logger = logging.getLogger(__name__)
+
 _lock = threading.Lock()
 _initialized = False
+
+# Soft caps to resist unbounded disk growth from open write endpoint.
+_MAX_PAGE_VIEWS = 500_000
+_PRUNE_TO = 400_000
 
 
 def _db_path() -> Path:
@@ -23,6 +31,14 @@ def _connect() -> sqlite3.Connection:
     conn = sqlite3.connect(str(_db_path()), check_same_thread=False)
     conn.row_factory = sqlite3.Row
     return conn
+
+
+def _harden_db_file() -> None:
+    path = _db_path()
+    try:
+        os.chmod(path, 0o600)
+    except OSError:
+        pass
 
 
 def init_analytics_db() -> None:
@@ -51,11 +67,31 @@ def init_analytics_db() -> None:
             _initialized = True
         finally:
             conn.close()
+        _harden_db_file()
 
 
 def ensure_initialized() -> None:
     if not _initialized:
         init_analytics_db()
+
+
+def _maybe_prune(conn: sqlite3.Connection) -> None:
+    count = conn.execute("SELECT COUNT(*) FROM page_views").fetchone()[0]
+    if count <= _MAX_PAGE_VIEWS:
+        return
+    # Keep the newest rows; delete oldest overflow.
+    to_delete = count - _PRUNE_TO
+    logger.warning("Pruning analytics page_views: deleting ~%s oldest rows", to_delete)
+    conn.execute(
+        """
+        DELETE FROM page_views
+        WHERE id IN (
+            SELECT id FROM page_views ORDER BY viewed_at ASC, id ASC LIMIT ?
+        )
+        """,
+        (to_delete,),
+    )
+    conn.commit()
 
 
 def record_page_view(
@@ -88,5 +124,7 @@ def record_page_view(
                 (clean_path, iso, ref, ua),
             )
             conn.commit()
+            _maybe_prune(conn)
         finally:
             conn.close()
+        _harden_db_file()

@@ -33,12 +33,20 @@ class CongressClient:
             )
 
         client = await self._get_client()
-        query = {"api_key": self.api_key, "format": "json", "limit": self.PAGE_SIZE}
+        # Pass key via header so failed request URLs never embed credentials
+        # (httpx includes the URL in HTTPStatusError messages).
+        query: dict[str, Any] = {"format": "json", "limit": self.PAGE_SIZE}
         if params:
             query.update(params)
+            # Never allow callers to put api_key into the query string.
+            query.pop("api_key", None)
 
         url = f"{self.base_url}{path}"
-        response = await client.get(url, params=query)
+        response = await client.get(
+            url,
+            params=query,
+            headers={"X-Api-Key": self.api_key},
+        )
         response.raise_for_status()
         data = response.json()
         self.cache.set(cache_key, data)
