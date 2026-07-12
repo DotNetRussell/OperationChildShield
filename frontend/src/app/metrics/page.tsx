@@ -75,7 +75,7 @@ export default async function MetricsPage() {
   }
 
   return (
-    <div className="page-container py-8">
+    <div className="page-container min-w-0 py-8">
       <Link href="/" className="text-sm text-muted hover:text-blue">
         ← Back to lawmakers
       </Link>
@@ -95,7 +95,8 @@ export default async function MetricsPage() {
             {formatUtcTimestamp(data.lastUpdated)}
           </p>
 
-          <section className="mt-6">
+          {/* min-w-0 so wide map scroll stays inside the page, not clipped by flex ancestors */}
+          <section className="mt-6 w-full min-w-0">
             <StateHeatMap byState={data.byState ?? []} />
           </section>
 

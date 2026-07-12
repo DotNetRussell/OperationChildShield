@@ -11,8 +11,15 @@ async function fetchApi<T>(path: string, timeoutMs = 20_000): Promise<T> {
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
+    // Dev: never serve stale API data (bill categories/descriptions change often).
+    // Prod: short revalidate so fixes land without a full rebuild-only dependency.
+    const cacheOpts =
+      process.env.NODE_ENV === "development"
+        ? ({ cache: "no-store" } as const)
+        : ({ next: { revalidate: 300 } } as const);
+
     const res = await fetch(`${API_URL}${path}`, {
-      next: { revalidate: 86400 },
+      ...cacheOpts,
       signal: controller.signal,
     });
 

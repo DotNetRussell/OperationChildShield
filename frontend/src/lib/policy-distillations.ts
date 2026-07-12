@@ -242,15 +242,15 @@ export const POLICY_DISTILLATIONS: PolicyDistillation[] = [
     category: "Victim Support & Justice",
     overviewUrl: billUrl(119, "house", 5348),
     scope:
-      "Provisions concerning children in Social Security disability benefit determinations.",
+      "Requires the Social Security Administration to reissue a new Social Security number to a child under 14 when their Social Security card was lost or stolen in the mail, to help prevent identity fraud.",
     bullets: [
       {
-        text: "Addresses protections for children in Social Security disability benefit determinations as drafted in the bill text.",
+        text: "Directs SSA to issue a new Social Security number for a child under 14 if the child's Social Security card was lost or stolen in the mail.",
         sourceUrl: billUrl(119, "house", 5348, "/text"),
         sourceLabel: "H.R. 5348 text",
       },
       {
-        text: "Official overview and actions for H.R. 5348 are on Congress.gov.",
+        text: "Aimed at reducing child identity fraud tied to Social Security documents that never reach the family.",
         sourceUrl: billUrl(119, "house", 5348, "/summary"),
         sourceLabel: "H.R. 5348 summary",
       },

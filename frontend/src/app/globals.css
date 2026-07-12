@@ -52,7 +52,17 @@ body {
   color: var(--foreground);
   font-family: var(--font-inter), system-ui, sans-serif;
   margin: 0;
+  /* Prefer clip for accidental page bleed, but nested overflow-x-auto still scrolls. */
   overflow-x: clip;
+}
+
+/* Contained horizontal scroll (tables, etc.). Prefer fitting content when possible. */
+.scroll-x-pane {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  min-width: 0;
 }
 
 /* Shared content width for all pages */

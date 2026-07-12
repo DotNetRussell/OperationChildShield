@@ -193,7 +193,7 @@ TRACKED_BILLS: list[TrackedBill] = [
         title="Social Security Child Protection Act of 2025",
         category=BillCategory.VICTIM_SUPPORT,
         stance=ProtectionStance.PROTECTION,
-        description="Protects children in Social Security disability benefit determinations.",
+        description="Requires SSA to reissue a new Social Security number to a child under 14 if their card was lost or stolen in the mail, to help prevent identity fraud.",
     ),
     # 118th Congress (2023-2025) - verified at congress.gov
     TrackedBill(
