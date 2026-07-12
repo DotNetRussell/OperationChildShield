@@ -9,9 +9,12 @@ services:
       - CONGRESS_NUMBER=${CONGRESS_NUMBER:-119}
       - CACHE_TTL_SECONDS=${CACHE_TTL_SECONDS:-86400}
       - CORS_ORIGINS=https://operationchildshield.org,https://www.operationchildshield.org
+      - ENV=production
+      - DISABLE_API_DOCS=1
     volumes:
       - backend-cache:/app/data
     restart: unless-stopped
+    user: "1001:1001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
       interval: 30s
