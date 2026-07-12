@@ -1,70 +1,59 @@
 # Deploy: GitHub Actions → DigitalOcean
 
-## Production droplet (created)
+## Production droplet (reference)
 
-| Field | Value |
-|-------|--------|
-| Name | `operation-child-shield-prod` |
-| Size | `s-2vcpu-4gb` (~$24/mo) |
-| Region | `nyc1` |
-| Public IP | `157.230.49.62` |
-| App path | `/opt/operationchildshield` |
-| SSH user | `root` |
-| SSH key (local) | `~/.ssh/ocs_prod_deploy` (no passphrase; for GitHub Actions) |
+Keep host-specific values in **private** ops notes or GitHub Environment secrets — do not commit live IPs, SSH users, or key material to this public repo.
+
+| Field | Guidance |
+|-------|----------|
+| Name | e.g. `operation-child-shield-prod` |
+| Size | `s-2vcpu-4gb` class (or larger) |
+| App path | `/opt/operationchildshield` (or set `DEPLOY_PATH`) |
+| SSH | Prefer a non-root deploy user with Docker group + limited sudo; root works but raises blast radius |
+| SSH key | Private key only in GitHub Environment secrets and local `~/.ssh/` (never committed) |
 
 Site (HTTPS + Let's Encrypt): https://operationchildshield.org and https://www.operationchildshield.org
 
 ## What you must add in GitHub
 
-**Critical:** secrets must be **Repository secrets**, not Environment secrets and not Variables.
+Deploy job uses `environment: prod`. Secrets must be available to that environment (Environment secrets for **prod**, or repository secrets if you change the workflow).
 
 Path:
 
-1. Repo → **Settings** → **Secrets and variables** → **Actions**
-2. Open the **Secrets** tab (not Variables)
-3. Under **Repository secrets** (not Environment secrets), click **New repository secret**
-
-If you see them under **Environments → production → Secrets**, this workflow will **not** see them unless the job has `environment: production`. Prefer Repository secrets for simplicity.
+1. Repo → **Settings** → **Environments** → **prod** (or **Secrets and variables** → **Actions**)
+2. Add secrets (values never committed):
 
 | Secret name | Value |
 |-------------|--------|
-| `DEPLOY_HOST` | `157.230.49.62` |
-| `DEPLOY_USER` | `root` |
+| `DEPLOY_HOST` | Droplet public IP or hostname |
+| `DEPLOY_USER` | SSH user (prefer non-root deploy user) |
 | `DEPLOY_SSH_KEY` | Full private key PEM (including BEGIN/END lines), **or** use `DEPLOY_SSH_KEY_B64` instead |
 | `DEPLOY_SSH_KEY_B64` | Preferred: single-line base64 of the private key (avoids multiline paste issues) |
-| `DEPLOY_PATH` | `/opt/operationchildshield` |
+| `DEPLOY_PATH` | e.g. `/opt/operationchildshield` |
 | `PUBLIC_SITE_URL` | `https://operationchildshield.org` |
 
 ### Preferred: base64 SSH key
 
-On the machine that has `~/.ssh/ocs_prod_deploy`:
+On the machine that has the deploy private key:
 
 ```bash
-base64 -w0 ~/.ssh/ocs_prod_deploy
+base64 -w0 ~/.ssh/YOUR_DEPLOY_KEY
 echo   # newline for your terminal only; do not include trailing newline in the secret if your paste tool adds one
 ```
 
-Paste the single line into repository secret `DEPLOY_SSH_KEY_B64`.
+Paste the single line into secret `DEPLOY_SSH_KEY_B64`.
 
 ### Alternative: raw PEM
 
 ```bash
-cat ~/.ssh/ocs_prod_deploy
+cat ~/.ssh/YOUR_DEPLOY_KEY
 ```
 
 Paste the entire output into `DEPLOY_SSH_KEY`. Do **not** commit this file.
 
 ### If Actions still says Missing secret
 
-Check the deploy job log `env:` block. If you see:
-
-```text
-DEPLOY_SSH_KEY:
-DEPLOY_HOST:
-DEPLOY_USER:
-```
-
-(all blank), GitHub is not injecting those secrets into the job. That means they are Variables, Environment secrets, or on the wrong repo — not Repository secrets. Re-create them under **Repository secrets**, then **Re-run failed jobs** (new run after saving secrets).
+Check the deploy job log secret-presence lines. If host/user/key are EMPTY, secrets are not injected — wrong environment, Variables instead of Secrets, or wrong repo. Re-create under the environment the workflow uses, then re-run.
 
 ## How deploy works
 
@@ -81,17 +70,51 @@ First successful deploy job also requires GHCR package write via `GITHUB_TOKEN` 
 
 ## DNS cutover (when ready)
 
-1. Point `operationchildshield.org` A record to `157.230.49.62`
+1. Point `operationchildshield.org` A record to the droplet
 2. Replace server `Caddyfile` with domain-based config (see `Caddyfile.example`)
 3. Update secret `PUBLIC_SITE_URL` to `https://operationchildshield.org`
 4. Update server `.env` `CORS_ORIGINS` / `NEXT_PUBLIC_API_URL`
 5. Rebuild frontend image (so `NEXT_PUBLIC_API_URL` is baked correctly) and redeploy
 
+## Security headers & proxy hardening (Caddy)
+
+Production `Caddyfile.example` sets baseline browser security headers on both apex and `www`:
+
+| Header | Purpose |
+|--------|---------|
+| `Strict-Transport-Security` | HSTS — force HTTPS for 1 year (+ subdomains) |
+| `Content-Security-Policy` | Limit script/style/img/connect sources (Next.js-friendly) |
+| `X-Frame-Options` | Deny framing (clickjacking) |
+| `X-Content-Type-Options` | `nosniff` |
+| `Referrer-Policy` / `Permissions-Policy` | Extra hardening |
+
+Also:
+
+- Strips `Server` and `X-Powered-By` from responses
+- Overwrites `X-Real-IP` / `X-Forwarded-For` with the real peer (blocks client XFF spoofing used against app rate limits)
+
+After updating the server `Caddyfile`, reload Caddy:
+
+```bash
+ssh -i ~/.ssh/YOUR_DEPLOY_KEY USER@HOST
+cd /opt/operationchildshield
+docker compose -f docker-compose.prod.yml exec caddy caddy reload --config /etc/caddy/Caddyfile
+# verify:
+curl -sI https://operationchildshield.org/ | grep -iE 'strict-transport|content-security|x-frame|x-content-type'
+```
+
+## Backend security notes
+
+- Backend image runs as non-root (`uid 1001`). Ensure the Docker volume for `/app/data` is writable by that user (`chown -R 1001:1001` on the volume mount if needed).
+- Set `ENV=production` / `DISABLE_API_DOCS=1` (compose templates do this) so OpenAPI UI is disabled.
+- Congress.gov key is sent as `X-Api-Key` header (not query string). API errors never echo upstream exception URLs.
+- After any historical key exposure, **rotate** `CONGRESS_API_KEY` at https://api.congress.gov/sign-up/ and update server `.env`.
+
 ## Manual commands on the droplet
 
 ```bash
-ssh -i ~/.ssh/ocs_prod_deploy root@157.230.49.62
+ssh -i ~/.ssh/YOUR_DEPLOY_KEY USER@HOST
 cd /opt/operationchildshield
-docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.ghcr.yml ps
 curl -s http://127.0.0.1/api/health
 ```
