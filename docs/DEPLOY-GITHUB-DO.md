@@ -83,24 +83,28 @@ Production `Caddyfile.example` sets baseline browser security headers on both ap
 | Header | Purpose |
 |--------|---------|
 | `Strict-Transport-Security` | HSTS — force HTTPS for 1 year (+ subdomains) |
-| `Content-Security-Policy` | Limit script/style/img/connect sources (Next.js-friendly) |
 | `X-Frame-Options` | Deny framing (clickjacking) |
 | `X-Content-Type-Options` | `nosniff` |
 | `Referrer-Policy` / `Permissions-Policy` | Extra hardening |
+| `Cross-Origin-Opener-Policy` | `same-origin` — isolate top-level browsing context |
+| `Cross-Origin-Resource-Policy` | `same-origin` — block cross-site embedding of our resources |
+| `Cross-Origin-Embedder-Policy` | `credentialless` — isolation without breaking congress.gov images |
+
+**Content-Security-Policy** is set by the Next.js app (`frontend/src/proxy.ts`) with **per-request nonces** — no `script-src 'unsafe-inline'` / `'unsafe-eval'` in production. Do **not** re-declare CSP in Caddy (a second policy would defeat nonces and reintroduce scanner findings).
 
 Also:
 
 - Strips `Server` and `X-Powered-By` from responses
 - Overwrites `X-Real-IP` / `X-Forwarded-For` with the real peer (blocks client XFF spoofing used against app rate limits)
 
-After updating the server `Caddyfile`, reload Caddy:
+After updating the server `Caddyfile`, reload Caddy (and redeploy the frontend image so proxy CSP is live):
 
 ```bash
 ssh -i ~/.ssh/YOUR_DEPLOY_KEY USER@HOST
 cd /opt/operationchildshield
 docker compose -f docker-compose.prod.yml exec caddy caddy reload --config /etc/caddy/Caddyfile
 # verify:
-curl -sI https://operationchildshield.org/ | grep -iE 'strict-transport|content-security|x-frame|x-content-type'
+curl -sI https://operationchildshield.org/ | grep -iE 'strict-transport|content-security|x-frame|x-content-type|cross-origin'
 ```
 
 ## Backend security notes

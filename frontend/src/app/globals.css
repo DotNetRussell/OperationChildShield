@@ -89,8 +89,7 @@ body {
   padding: 0.5rem 0 1.25rem;
   background:
     linear-gradient(rgba(30, 64, 175, 0.45), rgba(30, 64, 175, 0.55)),
-    url("https://t4.ftcdn.net/jpg/08/24/57/41/360_F_824574155_qai1qN0Wxhdb6owwcolxExe8aLjiIiat.jpg")
-      center / cover no-repeat;
+    url("/images/american_flag.jpg") center / cover no-repeat;
   color: white;
   display: flex;
   align-items: center;
@@ -102,8 +101,7 @@ body {
 .dark .hero-header {
   background:
     linear-gradient(rgba(11, 18, 32, 0.82), rgba(11, 18, 32, 0.92)),
-    url("https://t4.ftcdn.net/jpg/08/24/57/41/360_F_824574155_qai1qN0Wxhdb6owwcolxExe8aLjiIiat.jpg")
-      center / cover no-repeat;
+    url("/images/american_flag.jpg") center / cover no-repeat;
 }
 
 .grade-circle-a { background: #22c55e; }

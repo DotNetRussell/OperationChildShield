@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  // Prefer Caddy for full security headers in prod; hide framework fingerprint here too.
+  // CSP nonces are applied in src/proxy.ts. Caddy sets HSTS/COOP/CORP/COEP.
   poweredByHeader: false,
   async redirects() {
     return [
