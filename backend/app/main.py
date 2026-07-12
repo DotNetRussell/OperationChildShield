@@ -1,4 +1,5 @@
 import logging
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -11,6 +12,11 @@ from app.analytics_store import init_analytics_db
 from app.routes import analytics, health, involve, members, metrics
 
 logger = logging.getLogger(__name__)
+
+_IS_PROD = os.environ.get("ENV", os.environ.get("APP_ENV", "")).lower() in {
+    "prod",
+    "production",
+} or os.environ.get("DISABLE_API_DOCS", "").lower() in {"1", "true", "yes"}
 
 
 @asynccontextmanager
@@ -34,14 +40,18 @@ app = FastAPI(
     description="Transparency API for child protection voting records from Congress.gov",
     version="1.0.0",
     lifespan=lifespan,
+    # Hide OpenAPI UI in production even if the backend is ever exposed directly.
+    docs_url=None if _IS_PROD else "/docs",
+    redoc_url=None if _IS_PROD else "/redoc",
+    openapi_url=None if _IS_PROD else "/openapi.json",
 )
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Accept"],
 )
 
 app.include_router(health.router, prefix="/api")
