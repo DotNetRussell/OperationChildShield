@@ -1,11 +1,18 @@
 import csv
 import io
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, Query, Request
 from fastapi.responses import StreamingResponse
 
 from app.config import settings
 from app.metrics import build_metrics_dashboard
+from app.security import (
+    client_ip,
+    rate_limit,
+    safe_service_error,
+    safe_upstream_error,
+    validate_congress,
+)
 
 router = APIRouter()
 
@@ -15,15 +22,22 @@ async def get_metrics(
     request: Request,
     congress: int | None = Query(None),
 ):
+    rate_limit(
+        client_ip(request),
+        bucket="metrics",
+        max_hits=20,
+        window_seconds=60.0,
+        detail="Too many metrics requests. Please try again later.",
+    )
     client = request.app.state.congress_client
-    congress_num = congress or settings.congress_number
+    congress_num = validate_congress(congress, settings.congress_number)
 
     try:
         payload = await build_metrics_dashboard(client, congress_num)
     except ValueError as e:
-        raise HTTPException(status_code=503, detail=str(e))
+        raise safe_service_error(e)
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Metrics error: {e}")
+        raise safe_upstream_error(e, public_message="Unable to load metrics")
 
     return payload
 
@@ -33,15 +47,22 @@ async def export_metrics_csv(
     request: Request,
     congress: int | None = Query(None),
 ):
+    rate_limit(
+        client_ip(request),
+        bucket="metrics_export",
+        max_hits=10,
+        window_seconds=60.0,
+        detail="Too many export requests. Please try again later.",
+    )
     client = request.app.state.congress_client
-    congress_num = congress or settings.congress_number
+    congress_num = validate_congress(congress, settings.congress_number)
 
     try:
         payload = await build_metrics_dashboard(client, congress_num)
     except ValueError as e:
-        raise HTTPException(status_code=503, detail=str(e))
+        raise safe_service_error(e)
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Metrics export error: {e}")
+        raise safe_upstream_error(e, public_message="Unable to export metrics")
 
     output = io.StringIO()
     writer = csv.writer(output)
@@ -82,6 +103,7 @@ async def export_metrics_csv(
         )
 
     output.seek(0)
+    # congress_num is validated int — safe for Content-Disposition filename
     filename = f"operation-child-shield-bill-metrics-{congress_num}.csv"
     return StreamingResponse(
         iter([output.getvalue()]),
