@@ -2,10 +2,19 @@
 
 [![Backend unit tests](https://img.shields.io/github/actions/workflow/status/DotNetRussell/OperationChildShield/ci.yml?label=Backend%20unit%20tests&logo=pytest&logoColor=white)](https://github.com/DotNetRussell/OperationChildShield/actions/workflows/ci.yml)
 [![Frontend unit tests](https://img.shields.io/github/actions/workflow/status/DotNetRussell/OperationChildShield/ci.yml?label=Frontend%20unit%20tests&logo=vitest&logoColor=white)](https://github.com/DotNetRussell/OperationChildShield/actions/workflows/ci.yml)
+[![Security scan](https://img.shields.io/badge/SquidScanner-security%20scan-0ea5e9?logo=shieldsdotio&logoColor=white)](https://app.squidscanner.com/job/f80760c5-d4b7-4b9b-8524-1b435f64eed4)
 
 A transparency platform that publishes **neutral child safety voting records** for U.S. lawmakers using public data from the [Congress.gov API](https://api.congress.gov/). Each recorded floor vote is shown with how the member voted and whether that vote is consistent with Operation Child Shield board-adopted policy positions. The site does **not** publish letter grades, rankings, or scorecards.
 
 **Production:** [https://operationchildshield.org](https://operationchildshield.org)
+
+### Security scan
+
+| Resource | Link |
+|----------|------|
+| **Latest SquidScanner report** (operationchildshield.org) | [View full security report](https://app.squidscanner.com/job/f80760c5-d4b7-4b9b-8524-1b435f64eed4) |
+
+Independent agentic recon + AI analysis of the production site (headers, surface, findings). Open the report for grades, issues, and remediation detail.
 
 ---
 
