@@ -15,7 +15,7 @@ export function Footer() {
           Find Lawmakers
         </a>
         <a href="/metrics" className="underline hover:opacity-100">
-          See the Map
+          See the Numbers
         </a>
         <a href="/the-facts" className="underline hover:opacity-100">
           The Facts

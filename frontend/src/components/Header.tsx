@@ -6,7 +6,7 @@ import { ENABLE_BOARD_PAGE } from "@/lib/feature-flags";
 /** Ordered for engagement: explore data first, then act, then org/legal. */
 const NAV_LINKS = [
   { href: "/", label: "Find Lawmakers" },
-  { href: "/metrics", label: "See the Map" },
+  { href: "/metrics", label: "See the Numbers" },
   { href: "/the-facts", label: "The Facts" },
   { href: "/bills", label: "The Bills" },
   { href: "/get-involved", label: "Join Us" },

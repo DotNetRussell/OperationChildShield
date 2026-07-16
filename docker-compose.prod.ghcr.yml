@@ -12,6 +12,13 @@ services:
     image: ghcr.io/dotnetrussell/operationchildshield-backend:${IMAGE_TAG:-main}
     environment:
       - CONGRESS_API_KEY=${CONGRESS_API_KEY}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_FROM=${SMTP_FROM:-}
+      - INVOLVE_NOTIFY_TO=${INVOLVE_NOTIFY_TO:-}
+      - INVOLVE_SEND_AUTO_REPLY=${INVOLVE_SEND_AUTO_REPLY:-true}
       - CONGRESS_NUMBER=${CONGRESS_NUMBER:-119}
       - CACHE_TTL_SECONDS=${CACHE_TTL_SECONDS:-86400}
       - CORS_ORIGINS=${CORS_ORIGINS:-https://operationchildshield.org,https://www.operationchildshield.org}

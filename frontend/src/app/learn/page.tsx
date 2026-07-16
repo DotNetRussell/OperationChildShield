@@ -71,7 +71,7 @@ export default function LearnPage() {
           <li>
             <strong className="text-foreground">Compare across Congress:</strong>{" "}
             <Link href="/metrics" className="text-red font-semibold hover:underline">
-              metrics &amp; state heat map
+              metrics &amp; numbers
             </Link>{" "}
             show bill-level roll-call totals and state policy-consistency rates.
           </li>
@@ -128,7 +128,7 @@ export default function LearnPage() {
           <li>
             <strong className="text-foreground">Know your state:</strong> open the{" "}
             <Link href="/metrics" className="text-red font-semibold hover:underline">
-              state heat map
+              state metrics
             </Link>{" "}
             and drill into your state&apos;s members.
           </li>
@@ -166,7 +166,7 @@ export default function LearnPage() {
           href="/metrics"
           className="rounded-[10px] border border-card-border bg-surface px-5 py-4 text-center font-bold text-blue no-underline hover:bg-surface-muted"
         >
-          Explore the Map →
+          See the Numbers →
         </Link>
       </div>
     </div>

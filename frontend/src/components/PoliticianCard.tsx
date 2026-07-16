@@ -119,7 +119,7 @@ export function PoliticianCard({ member, loadVotes = true }: PoliticianCardProps
   return (
     <div
       ref={cardRef}
-      className="flex h-full w-full min-w-0 flex-col overflow-x-clip rounded-[10px] bg-surface shadow-[0_6px_12px_-2px_rgb(0_0_0_/_0.1)] transition-all duration-[0.25s] border border-card-border hover:-translate-y-1.5 hover:shadow-[0_20px_25px_-5px_rgb(0_0_0_/_0.15)]"
+      className="relative z-0 flex h-full w-full min-w-0 flex-col overflow-visible rounded-[10px] bg-surface shadow-[0_6px_12px_-2px_rgb(0_0_0_/_0.1)] transition-all duration-[0.25s] border border-card-border hover:z-10 hover:-translate-y-1.5 hover:shadow-[0_20px_25px_-5px_rgb(0_0_0_/_0.15)]"
     >
       <div className="overflow-hidden rounded-t-[10px] bg-gradient-to-r from-blue to-blue-light p-4 px-5 text-white">
         <div className="flex items-start gap-3">
@@ -162,17 +162,6 @@ export function PoliticianCard({ member, loadVotes = true }: PoliticianCardProps
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col p-5">
-        {hasKnownParty(party) && (
-          <div className="mb-4 flex shrink-0 justify-end border-b border-card-border pb-3">
-            <div className="flex flex-col items-end gap-1">
-              <PartyBadge party={party} variant="light" />
-              <span className="text-[0.7rem] font-bold uppercase tracking-wider text-muted">
-                Party Affiliation
-              </span>
-            </div>
-          </div>
-        )}
-
         <div className="mt-1 flex min-h-0 flex-1 flex-col text-[0.9rem]">
           <strong className="block my-2 mb-2.5 text-red text-[0.85rem]">
             RECORDED VOTES

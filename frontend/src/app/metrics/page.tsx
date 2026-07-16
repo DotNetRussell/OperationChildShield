@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { MetricsCharts } from "@/components/metrics/MetricsCharts";
-import { StateHeatMap } from "@/components/metrics/StateHeatMap";
 import { StatePerformanceTable } from "@/components/metrics/StatePerformanceTable";
 import { getMetrics, getMetricsExportUrl } from "@/lib/api";
 import { formatUtcTimestamp } from "@/lib/format";
@@ -10,7 +9,7 @@ import type { BillMetricsRow } from "@/lib/metrics-types";
 export const metadata: Metadata = {
   title: "See How Congress Voted",
   description:
-    "State heat map and roll-call totals for tracked child safety legislation.",
+    "Roll-call totals and state metrics for tracked child safety legislation.",
 };
 
 export const dynamic = "force-dynamic";
@@ -80,10 +79,10 @@ export default async function MetricsPage() {
         ← Back to lawmakers
       </Link>
 
-      <h1 className="text-3xl font-bold text-blue mt-4">See How Congress Voted</h1>
+      <h1 className="text-3xl font-bold text-blue mt-4">See the Numbers</h1>
       <p className="mt-4 text-muted leading-relaxed max-w-3xl">
-        State heat map and roll-call totals on tracked child safety bills.
-        Click a state to meet its members.
+        Roll-call totals and state-level metrics on tracked child safety bills.
+        Use the state table below to open members by state.
       </p>
 
       {error ? (
@@ -94,11 +93,6 @@ export default async function MetricsPage() {
             {data.dataSource} · Congress {data.congress} · Updated{" "}
             {formatUtcTimestamp(data.lastUpdated)}
           </p>
-
-          {/* min-w-0 so wide map scroll stays inside the page, not clipped by flex ancestors */}
-          <section className="mt-6 w-full min-w-0">
-            <StateHeatMap byState={data.byState ?? []} />
-          </section>
 
           <div className="mt-10 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
             <KpiCard label="Members Tracked" value={data.kpis.totalMembersTracked} />

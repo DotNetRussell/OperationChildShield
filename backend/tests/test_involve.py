@@ -15,6 +15,15 @@ def _app(tmp_path: Path, monkeypatch) -> TestClient:
 
 
 def test_involve_signup_persists_jsonl(tmp_path, monkeypatch):
+    sent: list[dict] = []
+
+    def fake_notify(record):
+        sent.append(record)
+        return True
+
+    monkeypatch.setattr(involve, "notify_involve_signup", fake_notify)
+    monkeypatch.setattr(involve, "auto_reply_involve_signup", lambda _r: False)
+
     client = _app(tmp_path, monkeypatch)
     res = client.post(
         "/api/involve",
@@ -38,6 +47,29 @@ def test_involve_signup_persists_jsonl(tmp_path, monkeypatch):
     assert record["interest"] == "volunteer"
     assert record["state"] == "Texas"
     assert "submittedAt" in record
+    assert len(sent) == 1
+    assert sent[0]["email"] == "jane@example.com"
+
+
+def test_involve_signup_succeeds_when_smtp_fails(tmp_path, monkeypatch):
+    def boom(_record):
+        raise RuntimeError("smtp down")
+
+    monkeypatch.setattr(involve, "notify_involve_signup", boom)
+    monkeypatch.setattr(involve, "auto_reply_involve_signup", boom)
+
+    client = _app(tmp_path, monkeypatch)
+    res = client.post(
+        "/api/involve",
+        json={
+            "name": "Jane Doe",
+            "email": "jane@example.com",
+            "consent": True,
+        },
+    )
+    assert res.status_code == 200
+    assert res.json()["ok"] is True
+    assert (tmp_path / "involve_signups.jsonl").exists()
 
 
 def test_involve_requires_consent(tmp_path, monkeypatch):
