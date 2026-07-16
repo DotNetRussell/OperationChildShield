@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { NcmecReportBanner } from "@/components/NcmecReportBanner";
-import { NCMEC } from "@/lib/ncmec";
 
 const partners = [
   {
@@ -41,41 +40,6 @@ export default function PartnersPage() {
       <div className="mt-8">
         <NcmecReportBanner variant="card" />
       </div>
-
-      <section className="mt-8 rounded-[10px] border border-card-border bg-surface p-6 shadow-sm">
-        <h2 className="m-0 text-xl font-bold text-blue">{NCMEC.name}</h2>
-        <p className="mt-2 text-sm text-muted leading-relaxed m-0">
-          Public national resource for missing and exploited children. Not an OCS
-          contractor partnership. Listed so visitors can report quickly.
-        </p>
-        <ul className="mt-4 space-y-2 text-sm list-none pl-0">
-          <li>
-            <a
-              href={NCMEC.reportExploitationUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-bold text-red hover:underline"
-            >
-              Report Abuse Now →
-            </a>
-          </li>
-          <li>
-            <a
-              href={NCMEC.siteUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue font-semibold hover:underline"
-            >
-              Visit missingkids.org →
-            </a>
-          </li>
-          <li>
-            <a href={`tel:${NCMEC.hotlineTel}`} className="text-blue font-semibold hover:underline">
-              Hotline {NCMEC.hotlineDisplay} ({NCMEC.hotlineAlt})
-            </a>
-          </li>
-        </ul>
-      </section>
 
       <div className="mt-10 grid gap-6">
         {partners.map((partner) => (

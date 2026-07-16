@@ -102,7 +102,7 @@ export function ShareButton({
     "block w-full px-4 py-2.5 text-left text-sm font-semibold text-foreground hover:bg-surface-muted border-t border-card-border first:border-t-0";
 
   return (
-    <div ref={menuRef} className={`relative ${className}`}>
+    <div ref={menuRef} className={`relative ${open ? "z-50" : "z-0"} ${className}`}>
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
@@ -117,7 +117,7 @@ export function ShareButton({
       {open && (
         <div
           role="menu"
-          className="absolute left-0 right-0 top-full z-20 mt-2 overflow-hidden rounded-md border border-card-border bg-surface shadow-[0_10px_25px_-5px_rgb(0_0_0_/_0.15)]"
+          className="absolute bottom-full left-0 right-0 z-50 mb-2 max-h-[min(24rem,70vh)] overflow-y-auto rounded-md border border-card-border bg-surface shadow-[0_10px_25px_-5px_rgb(0_0_0_/_0.15)]"
         >
           <button
             type="button"
