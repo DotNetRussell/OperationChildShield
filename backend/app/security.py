@@ -9,8 +9,37 @@ from collections import defaultdict
 from threading import Lock
 
 from fastapi import HTTPException, Request
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.types import ASGIApp
 
 logger = logging.getLogger(__name__)
+
+# Baseline headers for API responses (Caddy may add more at the edge for HTML).
+SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+    "Cross-Origin-Opener-Policy": "same-origin",
+    "Cross-Origin-Resource-Policy": "same-origin",
+    "Cache-Control": "no-store",
+}
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Attach security headers to every HTTP response."""
+
+    def __init__(self, app: ASGIApp, extra_headers: dict[str, str] | None = None):
+        super().__init__(app)
+        self.headers = {**SECURITY_HEADERS, **(extra_headers or {})}
+
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        for key, value in self.headers.items():
+            if key not in response.headers:
+                response.headers[key] = value
+        return response
+
 
 # Bioguide IDs are one letter + 6 digits (e.g. A000055). Allow a little slack for edge cases.
 _BIOGUIDE_RE = re.compile(r"^[A-Za-z][0-9]{5,7}$")

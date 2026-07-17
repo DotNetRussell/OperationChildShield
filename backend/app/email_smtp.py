@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import smtplib
 import ssl
 from email.message import EmailMessage
@@ -11,6 +12,27 @@ from typing import Any
 from app.config import settings
 
 logger = logging.getLogger(__name__)
+
+# CR/LF and other C0 controls (except TAB) must never enter headers or untrusted body lines.
+_UNSAFE_EMAIL_CHARS = re.compile(r"[\r\n\x00-\x08\x0b\x0c\x0e-\x1f\x7f]+")
+
+
+def sanitize_email_header(value: str, *, max_length: int = 200) -> str:
+    """Strip header-injection sequences and control characters for Subject/Reply-To/etc."""
+    cleaned = _UNSAFE_EMAIL_CHARS.sub(" ", str(value or ""))
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    if len(cleaned) > max_length:
+        cleaned = cleaned[:max_length].rstrip()
+    return cleaned
+
+
+def sanitize_email_body(value: str, *, max_length: int = 8000) -> str:
+    """Normalize newlines and strip dangerous controls for message bodies."""
+    text = str(value or "").replace("\r\n", "\n").replace("\r", "\n")
+    text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", text)
+    if len(text) > max_length:
+        text = text[:max_length]
+    return text
 
 
 def _from_address() -> str:
@@ -31,21 +53,34 @@ def send_email(
     if not settings.smtp_configured:
         raise RuntimeError("SMTP is not configured")
 
+    safe_to = sanitize_email_header(to, max_length=320)
+    safe_subject = sanitize_email_header(subject, max_length=200)
+    safe_from = sanitize_email_header(_from_address(), max_length=320)
+    safe_body = sanitize_email_body(body)
+    if not safe_to or not safe_from:
+        raise RuntimeError("Invalid email addresses for send")
+
     msg = EmailMessage()
-    msg["Subject"] = subject
-    msg["From"] = _from_address()
-    msg["To"] = to
+    msg["Subject"] = safe_subject
+    msg["From"] = safe_from
+    msg["To"] = safe_to
     if reply_to:
-        msg["Reply-To"] = reply_to
-    msg.set_content(body)
+        safe_reply = sanitize_email_header(reply_to, max_length=320)
+        if safe_reply and "@" in safe_reply and "\n" not in safe_reply:
+            msg["Reply-To"] = safe_reply
+    msg.set_content(safe_body)
 
     context = ssl.create_default_context()
-    with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=30) as smtp:
-        smtp.ehlo()
-        smtp.starttls(context=context)
-        smtp.ehlo()
-        smtp.login(settings.smtp_user, settings.smtp_password)
-        smtp.send_message(msg)
+    try:
+        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=30) as smtp:
+            smtp.ehlo()
+            smtp.starttls(context=context)
+            smtp.ehlo()
+            smtp.login(settings.smtp_user, settings.smtp_password)
+            smtp.send_message(msg)
+    except Exception:
+        logger.exception("SMTP send_email failed (to domain redacted)")
+        raise
 
 
 def notify_involve_signup(record: dict[str, Any]) -> bool:
@@ -59,12 +94,12 @@ def notify_involve_signup(record: dict[str, Any]) -> bool:
         logger.warning("No involve notify recipient configured")
         return False
 
-    name = record.get("name") or "(no name)"
-    email = record.get("email") or "(no email)"
-    interest = record.get("interest") or "(none)"
-    state = record.get("state") or "(none)"
-    message = record.get("message") or ""
-    submitted = record.get("submittedAt") or ""
+    name = sanitize_email_header(str(record.get("name") or "(no name)"), max_length=120)
+    email = sanitize_email_header(str(record.get("email") or "(no email)"), max_length=320)
+    interest = sanitize_email_header(str(record.get("interest") or "(none)"), max_length=80)
+    state = sanitize_email_header(str(record.get("state") or "(none)"), max_length=80)
+    message = sanitize_email_body(str(record.get("message") or ""), max_length=4000)
+    submitted = sanitize_email_header(str(record.get("submittedAt") or ""), max_length=80)
 
     body = (
         "New Operation Child Shield Join Us signup\n"
@@ -77,12 +112,16 @@ def notify_involve_signup(record: dict[str, Any]) -> bool:
         f"Message:\n{message}\n"
     )
 
-    send_email(
-        to=to,
-        subject=f"[OCS Join Us] {interest} — {name}",
-        body=body,
-        reply_to=email if "@" in str(email) else None,
-    )
+    try:
+        send_email(
+            to=to,
+            subject=f"[OCS Join Us] {interest} — {name}",
+            body=body,
+            reply_to=email if "@" in email else None,
+        )
+    except Exception:
+        logger.exception("notify_involve_signup failed")
+        return False
     return True
 
 
@@ -91,11 +130,11 @@ def auto_reply_involve_signup(record: dict[str, Any]) -> bool:
     if not settings.smtp_configured or not settings.involve_send_auto_reply:
         return False
 
-    email = (record.get("email") or "").strip()
+    email = sanitize_email_header(str(record.get("email") or ""), max_length=320)
     if not email or "@" not in email:
         return False
 
-    name = (record.get("name") or "").strip() or "friend"
+    name = sanitize_email_header(str(record.get("name") or "").strip() or "friend", max_length=120)
     body = (
         f"Hi {name},\n\n"
         "Thank you for signing up with Operation Child Shield. We received your "
@@ -106,9 +145,13 @@ def auto_reply_involve_signup(record: dict[str, Any]) -> bool:
         "https://operationchildshield.org\n"
     )
 
-    send_email(
-        to=email,
-        subject="We received your Operation Child Shield signup",
-        body=body,
-    )
+    try:
+        send_email(
+            to=email,
+            subject="We received your Operation Child Shield signup",
+            body=body,
+        )
+    except Exception:
+        logger.exception("auto_reply_involve_signup failed")
+        return False
     return True

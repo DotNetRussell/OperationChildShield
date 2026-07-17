@@ -28,6 +28,8 @@ services:
       - backend-cache:/app/data
     restart: unless-stopped
     user: "1001:1001"
+    mem_limit: 1g
+    cpus: "1.5"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
       interval: 30s
@@ -44,6 +46,8 @@ services:
       backend:
         condition: service_healthy
     restart: unless-stopped
+    mem_limit: 1g
+    cpus: "1.0"
 
   caddy:
     image: caddy:2-alpine
@@ -61,6 +65,8 @@ services:
     depends_on:
       - frontend
       - backend
+    mem_limit: 256m
+    cpus: "0.5"
 
 volumes:
   backend-cache:

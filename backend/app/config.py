@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     congress_api_key: str = ""
     congress_number: int = 119
     cache_ttl_seconds: int = 86400  # 24 hours
+    # Comma-separated exact origins (no wildcards). Prod: public HTTPS only.
     cors_origins: str = "http://localhost:3000"
     congress_base_url: str = "https://api.congress.gov/v3"
     cache_dir: str = "/app/data"

@@ -10,6 +10,7 @@ from app.congress_client import CongressClient
 from app.config import settings
 from app.analytics_store import init_analytics_db
 from app.routes import analytics, health, involve, members, metrics
+from app.security import SecurityHeadersMiddleware
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +47,8 @@ app = FastAPI(
     openapi_url=None if _IS_PROD else "/openapi.json",
 )
 
+# CORS first (outermost last-added runs first in Starlette); security headers next.
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,

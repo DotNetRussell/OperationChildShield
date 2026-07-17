@@ -66,6 +66,15 @@ export default function DisclaimerPage() {
           official publications, and errors may occur in processing or display. Use
           this site at your own discretion.
         </p>
+
+        <p>
+          <strong className="text-foreground">Site analytics.</strong> This site
+          records first-party page-view events (path, referrer, and browser user
+          agent) on our servers for operational metrics only. There is no public
+          analytics dashboard and no third-party ad trackers. Data is rate-limited,
+          stored with restricted file permissions, and is not sold. By using the
+          site you acknowledge this limited technical logging.
+        </p>
       </section>
 
       <section className="mt-10 bg-surface rounded-[10px] p-6 border border-card-border shadow-sm">

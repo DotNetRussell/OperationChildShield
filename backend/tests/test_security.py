@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 
 from app.security import (
+    SecurityHeadersMiddleware,
     client_ip,
     rate_limit,
     reset_rate_limits_for_tests,
@@ -92,3 +93,20 @@ def test_safe_upstream_error_hides_secrets():
     assert err.status_code == 502
     assert "api_key" not in err.detail.lower()
     assert "SECRET" not in err.detail
+
+
+def test_security_headers_middleware_sets_baseline():
+    app = FastAPI()
+    app.add_middleware(SecurityHeadersMiddleware)
+
+    @app.get("/ping")
+    def ping():
+        return {"ok": True}
+
+    client = TestClient(app)
+    r = client.get("/ping")
+    assert r.status_code == 200
+    assert r.headers.get("X-Content-Type-Options") == "nosniff"
+    assert r.headers.get("X-Frame-Options") == "DENY"
+    assert r.headers.get("Referrer-Policy") == "strict-origin-when-cross-origin"
+    assert "camera=()" in (r.headers.get("Permissions-Policy") or "")

@@ -27,6 +27,12 @@ jobs:
       - name: Install dependencies
         run: pip install -r backend/requirements.txt -r backend/requirements-dev.txt
 
+      - name: pip-audit
+        run: pip-audit -r backend/requirements.txt -r backend/requirements-dev.txt
+
+      - name: Bandit (security)
+        run: bandit -q -r backend/app -x backend/tests -ll
+
       - name: Run pytest
         working-directory: backend
         run: python -m pytest -q --tb=short
@@ -58,6 +64,26 @@ jobs:
             npm install
           fi
 
+      - name: npm audit
+        working-directory: frontend
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
       - name: Run Vitest
         working-directory: frontend
         run: npm test
+
+  security-scan:
+    name: Container (Trivy config)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Trivy filesystem scan (config + secrets)
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
