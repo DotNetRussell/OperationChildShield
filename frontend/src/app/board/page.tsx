@@ -77,12 +77,12 @@ const officers: BoardMember[] = [
     photoHeight: 2048,
   },
   {
-    name: "David Saldivar",
+    name: "Sara Bowthorpe",
     role: "Treasurer",
     membership: "Founding Voting Member",
-    photo: "/images/david.jfif",
-    photoWidth: 1004,
-    photoHeight: 1211,
+    photo: "/images/sara.png",
+    photoWidth: 1086,
+    photoHeight: 1448,
   },
 ];
 
